@@ -1,12 +1,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <string.h>
+#include <iostream>
 class Socket
 {
 public:
-    Socket(std::string addr,int port);
-    void connect();
+    Socket(std::string addr, int port);
 private:
     int fd;
     sockaddr_in* sock;
