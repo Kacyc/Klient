@@ -20,16 +20,18 @@ int main(int argc, char **argv) {
     
     int bufsize = 256;
     char buffer[bufsize];
-    int br = stream.recv_data(buffer, bufsize);
+    //int br = stream.recv_data(buffer, bufsize);
     
     
-    char buffsend[] = {"Czesc "};
+    //char buffsend[] = {"Czesc "};
+    char buffsend[24];
     
+    std::cin >> buffsend;
     stream.send_data(buffsend, sizeof(buffsend)/sizeof(char));
     
     
     
-    std::cout << "br: " << br <<std::endl;
+    std::cout << "Sent " <<std::endl;
     
     return 0;
 }

@@ -56,6 +56,11 @@ int Acceptor::accp()
     return fd;
 }
 
+int Acceptor::get_fd()
+{
+  return lsfd;
+}
+
 Acceptor::~Acceptor()
 {
     close(lsfd);

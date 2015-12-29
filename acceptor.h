@@ -18,6 +18,7 @@ private:
 public:
     Acceptor(std::string my_address, int my_port);
     void start();
+    int get_fd();
     int accp();
     ~Acceptor();
 };
