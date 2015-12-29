@@ -1,17 +1,19 @@
 #include <iostream>
 #include "connector.h"
 #include "stream.h"
-
+#include "inotify.h";
 int main(int argc, char **argv) {
     
-    //const char* dir;
+    const char* dir;
     //dir = argv[1];
-    
+    dir="/home/kacyc";
     //const char* addr =  argv[2];
     //int port = atoi( argv[3]);
     const char* addr = "127.0.0.1";
     int port = 1330;
-  
+    
+    Inotify inotify(dir);
+    inotify.readNotify();
   
     Connector connector;
     int fd = connector.conn(addr, port);
