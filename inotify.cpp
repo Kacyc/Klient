@@ -1,6 +1,6 @@
 #include "inotify.h"
 
-Inotify::Inotify(std::string path)
+Inotify::Inotify(const char* path)
 {
   this->path=path;
   
@@ -11,8 +11,10 @@ Inotify::Inotify(std::string path)
   }
 };
 
-/*std:string*/void Inotify::read()
+/*std:string*/void Inotify::readNotify()
 {
+  char buffer[BUF_LEN];
+  int length,i=0;
   wd = inotify_add_watch( fd, path, IN_MODIFY | IN_CREATE | IN_DELETE );
    length = read( fd, buffer, BUF_LEN );  
 
