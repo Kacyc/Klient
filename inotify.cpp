@@ -5,10 +5,13 @@ Inotify::Inotify(const char* path)
   this->path=path;
   
   this->fd = inotify_init();
-
+  
   if ( fd < 0 ) {
     perror( "inotify_init" );
   }
+  
+  this->wd = inotify_add_watch( fd, path, IN_MODIFY | IN_CREATE | IN_DELETE );
+
 };
 
 std::vector<std::string> Inotify::readNotify()
@@ -17,14 +20,16 @@ std::vector<std::string> Inotify::readNotify()
   char buffer[BUF_LEN];
   int length,i=0;
   std::string line;
-  wd = inotify_add_watch( fd, path, IN_MODIFY | IN_CREATE | IN_DELETE );
-   length = read( fd, buffer, BUF_LEN );  
-
+  
+  
+  length = read( fd, buffer, BUF_LEN );  
+  
   if ( length < 0 ) {
     perror( "read" );
   }  
-
-  while ( i < length ) {
+  
+  
+  while (i < length) {
     struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
     if ( event->len ) {
       if ( event->mask & IN_CREATE ) {
@@ -66,6 +71,69 @@ std::vector<std::string> Inotify::readNotify()
     }
     i += EVENT_SIZE + event->len;
   }
-  ( void ) inotify_rm_watch( fd, wd );
+  
   return red;
+  
+}
+Inotify::~Inotify()
+{
+  ( void ) inotify_rm_watch( fd, wd );
+}
+
+
+
+std::string Inotify::addzero(int x)
+{
+  std::ostringstream ss;
+  ss << x;
+  
+  if(x < 10)
+  {
+      std::string temp = "0";
+      
+      
+      temp += ss.str();
+      //std::cout << "addzero: "  << temp << std::endl;
+      return temp;
+  }
+  else
+    return ss.str();
+  
+}
+
+std::string Inotify::returndate(const char* path)
+{
+  struct tm* clock;               
+  struct stat attrib;         
+  stat(path, &attrib);
+  clock = gmtime(&(attrib.st_mtime));
+  std::string tempdate;
+  
+  
+  tempdate = addzero(clock->tm_year);
+  //std::cout << "year: " << tempdate << std::endl;
+  tempdate += addzero(clock->tm_mon);
+  //std::cout << "monthr: " << tempdate << std::endl;
+  tempdate += addzero(clock->tm_mday);
+  //std::cout << "day: " << tempdate << std::endl;
+  tempdate += addzero(clock->tm_hour);
+  //std::cout << "hour: " << tempdate << std::endl;
+  tempdate += addzero(clock->tm_min);
+  //std::cout << "min: " << tempdate << std::endl;
+  tempdate += addzero(clock->tm_sec);
+  //std::cout << "sec: " << tempdate << std::endl;
+  
+ 
+  
+  return tempdate;
+}
+
+int Inotify::get_wd()
+{
+    return wd;
+}
+
+int Inotify::get_fd()
+{
+    return fd;
 }

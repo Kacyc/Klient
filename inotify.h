@@ -1,6 +1,11 @@
 #ifndef INOTIFY_H
 #define INOTIFY_H
+
+#include <iostream>
 #include <stdio.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <sstream>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -18,7 +23,12 @@ private:
   int wd;
 public:
   Inotify(const char* path);
+  ~Inotify();
   std::vector<std::string> readNotify();
+  std::string addzero(int x);
+  std::string returndate(const char* path);
+  int get_wd();
+  int get_fd();
 };
 
 
