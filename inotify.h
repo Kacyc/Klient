@@ -27,7 +27,7 @@ public:
   std::vector<std::string> readNotify();
   std::string addzero(int x);
   std::string returndate(const char* path);
-  int get_wd();
+  std::string get_path();
   int get_fd();
 };
 

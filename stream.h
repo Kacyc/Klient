@@ -6,13 +6,16 @@
 #include <netinet/in.h>
 //#include <arpa/inet.h>
 #include <iostream>
+#include <stdio.h>
 #include <vector>
+#include <string.h>
+#include <sys/stat.h>
 
 struct data
 {
-  int type;
-  std::vector <std::string> names;
-  std::vector <std::string> dates;
+  char name[20];
+  int namesize;
+  int size;
 };
 
 
@@ -20,14 +23,16 @@ class Stream
 {
 private:
     int fd;
-    struct data *d;
+    struct data d;
 public:
     Stream(int filedesc);
     int send_message(char* buffer, int len);
     int recv_message(char* buffer, int len);
-    int send_data(int type, std::vector<std::string> names, std::vector <std::string> dates);
-    int recv_data(std::vector<std::string> &names, std::vector <std::string> &dates);
-  
+    int send_data(std::string path, std::string filename);
+    int recv_data();
+    void send_file(std::string path, std::string filename);
+    void recv_file(std::string path);
+    int get_file_size(std::string filename);
 };
 
 

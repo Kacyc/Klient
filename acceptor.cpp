@@ -35,7 +35,7 @@ void Acceptor::start()
       exit (EXIT_FAILURE);
     }
     
-    int nlisten = listen(lsfd, 3);
+    int nlisten = listen(lsfd, 32);
     if(nlisten == -1)
     {
       perror ("Can't set queue size");

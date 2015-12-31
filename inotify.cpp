@@ -31,20 +31,18 @@ std::vector<std::string> Inotify::readNotify()
   
   while (i < length) {
     struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
-    if ( event->len ) {
+    if ( event->len && event->name[0] != '.') {
       if ( event->mask & IN_CREATE ) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was created.\n", event->name );
-	  line="The directory "+std::string(event->name)+ " was created";
-	  red.push_back(line);
+	  red.push_back(std::string(event->name));
         }
         else {
           printf( "The file %s was created.\n", event->name );
-	  line="The file "+std::string(event->name)+ " was created";
-	  red.push_back(line);
+	  red.push_back(std::string(event->name));
         }
       }
-      else if ( event->mask & IN_DELETE ) {
+      else if ( event->mask & IN_DELETE && event->name[0] != '.') {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was deleted.\n", event->name ); 
 	  line="The directory "+std::string(event->name)+ " was deleted"; 
@@ -56,16 +54,14 @@ std::vector<std::string> Inotify::readNotify()
 	  red.push_back(line);
         }
       }
-      else if ( event->mask & IN_MODIFY ) {
+      else if ( event->mask & IN_MODIFY && event->name[0] != '.') {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was modified.\n", event->name );
-	  line="The directory "+std::string(event->name)+ " was modified";
-	  red.push_back(line);
+	  red.push_back(std::string(event->name));
         }
         else {
           printf( "The file %s was modified.\n", event->name );
-	  line="The file "+std::string(event->name)+ " was modified";
-	  red.push_back(line);
+	  red.push_back(std::string(event->name));
         }
       }
     }
@@ -128,9 +124,9 @@ std::string Inotify::returndate(const char* path)
   return tempdate;
 }
 
-int Inotify::get_wd()
+std::string Inotify::get_path()
 {
-    return wd;
+    return path;
 }
 
 int Inotify::get_fd()

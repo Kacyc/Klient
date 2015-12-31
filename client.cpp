@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
     fds[2].fd = inotify.get_fd();
     fds[2].events = POLLIN;
     
- 
+    
     
     
     Stream stream(fd);
@@ -78,17 +78,20 @@ int main(int argc, char **argv) {
 	{
 	  int bufsize=256;
 	  char buffer[bufsize];
-	  int bytes_read = read(0,buffer,bufsize); 
-	  stream.send_message(buffer,bytes_read); 
+	  int bytes_read = read(0,buffer,bufsize);
+	  buffer[bytes_read-1] = '\0';
+	  std::cout << "read len: " << strlen(buffer) << std::endl;
+	  stream.send_file("/home/mati/test",buffer);
+	  //stream.send_message(buffer,bytes_read); 
 	}
 	else if(fds[2].revents == 1)
 	{
-	  
-	 inotify.readNotify();
-    
-	  
+	  std::cout << "inotify something happened" << std::endl; 
+	 std::vector<std::string> x = inotify.readNotify();
+	 for(std::vector<std::string>::iterator it = x.begin(); it != x.end(); ++it) {
+	  stream.send_file(inotify.get_path(),*it);
+	 }
 	}
-
      }
     /*
     std::cin >> buffsend;
