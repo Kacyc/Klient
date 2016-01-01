@@ -7,9 +7,9 @@
 
 int main(int argc, char **argv) {
     
-    const char* dir;
-    //dir = argv[1];
-    dir="/home/mati/cl";
+    const char* dir = "/home/mati/cl";
+    if(argv[1] != NULL)
+      dir = argv[1];
     //const char* addr =  argv[2];
     //int port = atoi( argv[3]);
     const char* addr = "127.0.0.1";
@@ -64,15 +64,18 @@ int main(int argc, char **argv) {
    
 	if (fds[0].revents == 1)
 	{
-	 
-	  int br = stream.recv_message(buffer, bufsize);
 	  
-	  if(br==0)
+	  inotify.remove_watch();
+	  stream.recv_file(inotify.get_path());
+	  inotify.add_watch();
+	  
+	  /*if(br==0)
 	  {  
 	    std::cout << "connection lost: " << nfds << "->" <<nfds-1   << std::endl;
 	    nfds--;
 	    break;
 	  }
+	  */
 	}
 	else if(fds[1].revents == 1)
 	{

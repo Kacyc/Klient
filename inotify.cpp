@@ -10,7 +10,7 @@ Inotify::Inotify(const char* path)
     perror( "inotify_init" );
   }
   
-  this->wd = inotify_add_watch( fd, path, IN_MODIFY | IN_CREATE | IN_DELETE );
+  this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE);
 
 };
 
@@ -32,7 +32,7 @@ std::vector<std::string> Inotify::readNotify()
   while (i < length) {
     struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
     if ( event->len && event->name[0] != '.') {
-      if ( event->mask & IN_CREATE ) {
+      if ( event->mask & IN_CLOSE_WRITE) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was created.\n", event->name );
 	  red.push_back(std::string(event->name));
@@ -42,7 +42,7 @@ std::vector<std::string> Inotify::readNotify()
 	  red.push_back(std::string(event->name));
         }
       }
-      else if ( event->mask & IN_DELETE && event->name[0] != '.') {
+      /*else if ( event->mask & IN_DELETE && event->name[0] != '.') {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was deleted.\n", event->name ); 
 	  line="The directory "+std::string(event->name)+ " was deleted"; 
@@ -63,7 +63,7 @@ std::vector<std::string> Inotify::readNotify()
           printf( "The file %s was modified.\n", event->name );
 	  red.push_back(std::string(event->name));
         }
-      }
+      }*/
     }
     i += EVENT_SIZE + event->len;
   }
@@ -132,4 +132,14 @@ std::string Inotify::get_path()
 int Inotify::get_fd()
 {
     return fd;
+}
+
+void Inotify::add_watch()
+{
+  this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE);
+}
+
+void Inotify::remove_watch()
+{
+  ( void ) inotify_rm_watch( fd, wd );
 }

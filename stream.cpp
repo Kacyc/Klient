@@ -14,10 +14,9 @@ int Stream::send_message(char* buffer, int len)
 }
 
 int Stream::recv_message(char* buffer, int len)
-{
-  std::cout << "przed recv" << std::endl;
+{ 
   int bytes_recv = recv(fd, buffer, len, 0);
-  std::cout << "za recv" << std::endl;
+  
   buffer[bytes_recv] = '\0';
   std::cout << buffer << std::endl;
   return bytes_recv;
@@ -101,11 +100,9 @@ void Stream::send_file(std::string path, std::string filename)
   
 }
 
-void Stream::recv_file(std::string path)
+std::string Stream::recv_file(std::string path)
 {
-  char name[20];
-  int namesize;
-  int filesize;
+  
   
   int bytes = recv_data();
   d.name[d.namesize]='\0';
@@ -143,6 +140,9 @@ void Stream::recv_file(std::string path)
   }
   std::cout << "file writed" << std::endl;
   fclose (pFile);
+  
+  std::cout << "Jaki plik udalo sie odebrac: " << std::string(d.name) << std::endl;
+  return std::string(d.name);
 }
 
 int Stream::get_file_size(std::string filename)
@@ -152,3 +152,7 @@ int Stream::get_file_size(std::string filename)
     return rc == 0 ? stat_buf.st_size : -1;
 }
 
+int Stream::get_fd()
+{
+  return fd;
+}

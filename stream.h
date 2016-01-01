@@ -31,8 +31,9 @@ public:
     int send_data(std::string path, std::string filename);
     int recv_data();
     void send_file(std::string path, std::string filename);
-    void recv_file(std::string path);
+    std::string recv_file(std::string path);
     int get_file_size(std::string filename);
+    int get_fd();
 };
 
 

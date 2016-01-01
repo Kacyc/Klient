@@ -28,6 +28,8 @@ public:
   std::string addzero(int x);
   std::string returndate(const char* path);
   std::string get_path();
+  void add_watch();
+  void remove_watch();
   int get_fd();
 };
 
