@@ -22,7 +22,7 @@ int Stream::recv_message(char* buffer, int len)
   return bytes_recv;
 }
 
-int Stream::send_data(std::string path, std::string filename)
+int Stream::send_data(std::string path, std::string filename, int filesize, int type)
 {
   std::string fullpath = path + "/" + std::string(filename);
   char name[20];
@@ -30,7 +30,9 @@ int Stream::send_data(std::string path, std::string filename)
   
   d.namesize = filename.length();
   d.name[d.namesize] = '\0';
-  d.size = get_file_size(fullpath);
+  d.size = filesize;
+  d.type = type;
+  
   std::cout << "File: " << d.name << " has: " << d.size << " bytes.  " << d.namesize << std::endl;
   int bytes_sent = send(fd,&d,sizeof(d),0);
   
@@ -49,14 +51,32 @@ int Stream::recv_data()
 
 void Stream::send_file(std::string path, std::string filename)
 {
+  int type, filesize;
   std::string fullpath = path + "/" + std::string(filename); 
-  int filesize = get_file_size(fullpath);
+  
   char name[20];
   strncpy(name, filename.c_str(), filename.length() );
+  struct stat s;
+  if( stat(fullpath.c_str(),&s) == 0 )
+  {
+    if( s.st_mode & S_IFDIR )
+    {  
+      type = 1;
+      filesize = 0;
+    }
+    else
+    {
+      type = 0;
+      filesize = get_file_size(fullpath);
+    }
+  }
+  else
+  {
+    type = 0;
+    filesize = -1;
+  }
   
-  
- 
-  send_data(path, filename);
+  send_data(path, filename, filesize, type);
   //send_message(d, sizeof(d));
   
   /*
@@ -69,7 +89,7 @@ void Stream::send_file(std::string path, std::string filename)
   char buf[4];
   recv_message(buf,4);
   
-  if(filesize > 0)
+  if(filesize > 0 && type == 0)
   {
   //fullpath = "/home/mati/test/a.txt";
   //std::cout << fullpath << std::endl;
@@ -117,7 +137,14 @@ std::string Stream::recv_file(std::string path)
   char buf[4] = "get";
   send_message(buf,4);
   
-  FILE *pFile = fopen(fullpath.c_str(), "wb");
+ 
+  FILE *pFile = NULL; 
+  
+  if(d.type == 1)
+    mkdir(fullpath.c_str(),0777);
+  else
+    pFile = fopen(fullpath.c_str(), "wb");
+  
   if(d.size > 0)
   {
     
@@ -139,7 +166,16 @@ std::string Stream::recv_file(std::string path)
   }
   }
   std::cout << "file writed" << std::endl;
-  fclose (pFile);
+  if(pFile != NULL)
+  {	
+    std:: cout << " zamykanie pfile" << std::endl;
+    fclose (pFile);
+  }
+  
+  std:: cout << "SPRAWDZAAM" << std::endl;
+  
+  if(d.size == -1 )
+    remove( fullpath.c_str() );
   
   std::cout << "Jaki plik udalo sie odebrac: " << std::string(d.name) << std::endl;
   return std::string(d.name);
