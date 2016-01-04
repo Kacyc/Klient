@@ -34,30 +34,40 @@ std::vector<std::string> Inotify::readNotify()
     if ( event->len && event->name[0] != '.') {
       if ( event->mask & IN_CLOSE_WRITE) {
         if ( event->mask & IN_ISDIR ) {
-          printf( "The directory %s was created.\n", event->name );
-	  red.push_back(std::string(event->name));
+          printf( "The directory %s was created/modified.\n", event->name );
+	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
+	  red.push_back(rel_path);
         }
         else {
-          printf( "The file %s was created.\n", event->name );
-	  red.push_back(std::string(event->name));
+          printf( "The file %s was created/modified.\n", event->name );
+	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
+	  red.push_back(rel_path);
         }
       }
       else if ( event->mask & IN_DELETE ) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was deleted.\n", event->name ); 
 	  line="The directory "+std::string(event->name)+ " was deleted"; 
-	  red.push_back(std::string(event->name));
+	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
+	  red.push_back(rel_path);
         }
         else {
           printf( "The file %s was deleted.\n", event->name );
 	  line="The file "+std::string(event->name)+ " was deleted"; 
-	  red.push_back(std::string(event->name));
+	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
+	  red.push_back(rel_path);
         }
       }
       else if ( event->mask & IN_CREATE && event->mask & IN_ISDIR) {
         if ( event->mask & IN_ISDIR ) {
-          printf( "The directory %s was modified.\n", event->name );
-	  red.push_back(std::string(event->name));
+          printf( "The directory %s was created.\n", event->name );
+	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
+	  std::string new_abs_path = std::string(path) + "/" + rel_path; 
+	  int new_wd = inotify_add_watch( fd, new_abs_path.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_DELETE ); 
+	  std::cout << "Dodaje nowy folder o sciezce absolutnej: " << new_abs_path << std::endl;
+	  std::cout << "Dodaje nowy folder o sciezce wzglednej: " << rel_path << std::endl;
+	  subdirs.push_back({rel_path, new_wd});
+	  red.push_back(rel_path);
         }/*
         else {
           printf( "The file %s was modified.\n", event->name );
@@ -74,6 +84,7 @@ std::vector<std::string> Inotify::readNotify()
 Inotify::~Inotify()
 {
   ( void ) inotify_rm_watch( fd, wd );
+
 }
 
 
@@ -134,6 +145,20 @@ int Inotify::get_fd()
     return fd;
 }
 
+std::string Inotify::get_rel_path(int event_wd, std::string event_name)
+{
+  std::string rel_path; 
+  if(event_wd != wd)
+  {
+	    std::vector<fold_wd>::iterator it = std::find_if(subdirs.begin(), subdirs.end(),  [&](fold_wd& f){ return f.wd == event_wd; } );
+	    rel_path = (*it).path + "/" + event_name;
+  }
+  else
+    rel_path = event_name;
+  
+  return rel_path;
+}
+
 void Inotify::add_watch()
 {
   this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE | IN_CREATE | IN_DELETE );
@@ -143,3 +168,4 @@ void Inotify::remove_watch()
 {
   ( void ) inotify_rm_watch( fd, wd );
 }
+

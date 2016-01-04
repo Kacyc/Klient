@@ -13,14 +13,23 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <algorithm>
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
 #define BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
+
+struct fold_wd
+{
+  std::string path;
+  int wd;
+};
+
 class Inotify
 {
 private:
   const char* path;
   int fd;
   int wd;
+  std::vector<fold_wd> subdirs;
 public:
   Inotify(const char* path);
   ~Inotify();
@@ -31,6 +40,7 @@ public:
   void add_watch();
   void remove_watch();
   int get_fd();
+  std::string get_rel_path(int event_wd,std::string event_name);
 };
 
 

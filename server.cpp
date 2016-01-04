@@ -6,9 +6,10 @@
 int main(int argc, char **argv) {
     
   
-    const char* dir;
-    //dir = argv[1];
-    dir="/home/mati/sv";
+    const char* dir = "/home/mati/sv";
+    if(argv[1] != NULL)
+      dir = argv[1];
+    
     
     const char* addr = "127.0.0.1";
     int port = 1330;
