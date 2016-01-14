@@ -18,7 +18,7 @@ int Stream::recv_message(char* buffer, int len)
   int bytes_recv = recv(fd, buffer, len, 0);
   
   buffer[bytes_recv] = '\0';
-  std::cout << buffer << std::endl;
+  //std::cout << buffer << std::endl;
   return bytes_recv;
 }
 
@@ -28,12 +28,13 @@ int Stream::send_data(std::string path, std::string filename, int filesize, int 
   char name[20];
   strncpy(d.name, filename.c_str(), filename.length() );
   
+  
   d.namesize = filename.length();
-  d.name[d.namesize] = '\0';
+  
   d.size = filesize;
   d.type = type;
   
-  std::cout << "File: " << d.name << " has: " << d.size << " bytes.  " << d.namesize << std::endl;
+  
   int bytes_sent = send(fd,&d,sizeof(d),0);
   
   return bytes_sent;
@@ -76,108 +77,105 @@ void Stream::send_file(std::string path, std::string filename)
     filesize = -1;
   }
   
-  send_data(path, filename, filesize, type);
-  //send_message(d, sizeof(d));
+  send_data(path, filename, filesize, type);	//wyslij nazwe pliku,rozmiar itd..
   
-  /*
-  std::cout << "sizeof(filename): " << filename << std::endl;
-  std::cout << "sizeof(a.txt: " << "a.txt" << std::endl;
   
-  std::cout << "sizeof(filename): " << sizeof(filename) << std::endl;
-  std::cout << "sizeof(a.txt: " << sizeof("a.txt") << std::endl;
-  */
-  char buf[4];
-  recv_message(buf,4);
+  recv_syn();
   
   if(filesize > 0 && type == 0)
   {
   //fullpath = "/home/mati/test/a.txt";
   //std::cout << fullpath << std::endl;
-  FILE *pFile = fopen(fullpath.c_str(), "rb");
+  FILE *pFile = fopen(fullpath.c_str(), "rb");	//otworz plik, czytaj z niego, i wysylaj
   
   int nread;
   char buff[256] = {0};
-  do{
-    nread = fread(buff,1,256,pFile);
-    std::cout << "Bytes read: " << nread << std::endl;
+  int size_to_send = filesize;
+  while(size_to_send > 0){
+    
+    
+    nread = fread(buff,1,256,pFile); 
     int bytes_sent = send_message(buff,nread);
-    std::cout << "Bytes sent: " << bytes_sent << std::endl;
+    size_to_send -= bytes_sent;
+   
+    //std::cout << "Bytes sent: " << bytes_sent << std::endl;
+    recv_syn();
     
-    /*if (nread < 256)
-    {
-       if (feof(pFile))
-	printf("End of file\n");
-       if (ferror(pFile))
-         printf("Error reading\n");
-       
-     }
-    */
     
-  }while(nread > 0);
+    //if (bytes_sent < 256)
+    // break;
+    
+  }
   fclose (pFile);  
   }
-  std::cout << "sent whole file" << std::endl;
-  
+  std::cout << "Wyslalem plik: " << filename << "  o rozm.: " << filesize << std::endl;
+ 
 }
 
 std::string Stream::recv_file(std::string path)
 {
   
   
-  int bytes = recv_data();
+  int bytes = recv_data();	//odbierz nazwe,rozmiar itd...
   d.name[d.namesize]='\0';
   
   //int bytes = recv_message(name,20);
-  std::cout << "RECFile: " << d.name << " has: " << d.size << " bytes."<< std::endl;
+  
   
   std::string fullpath = path + "/" + std::string(d.name);
   //std::string fullpath = "/home/mati/sv/a.txt";
   //std::cout << fullpath << std::endl;
   
-  char buf[4] = "get";
-  send_message(buf,4);
+  send_syn();
   
- 
-  FILE *pFile = NULL; 
   
-  if(d.type == 1)
-    mkdir(fullpath.c_str(),0777);
-  else
-    pFile = fopen(fullpath.c_str(), "wb");
   
-  if(d.size > 0)
+  
+  if(d.size == -1)
   {
     
-    std::cout << "file created" << std::endl;
-    char recvbuf[256] = {0};
-    int bytesReceived=0;
-    std::cout << "znak" << std::endl;
-  
-  while((bytesReceived = recv_message(recvbuf,256)) >= 0)
-  {
-    std::cout << "bytesReceived: " << bytesReceived << std::endl;
-    std::cout << "recv_message: " << recvbuf << std::endl;
-    std::cout << "sizeof: " << strlen(recvbuf) << std::endl;
-    fwrite(recvbuf, 1,bytesReceived,pFile);
-    
-    if(bytesReceived < 256)
-      break;
-    
-  }
-  }
-  std::cout << "file writed" << std::endl;
-  if(pFile != NULL)
-  {	
-    std:: cout << " zamykanie pfile" << std::endl;
-    fclose (pFile);
-  }
-  
-  std:: cout << "SPRAWDZAAM" << std::endl;
-  
-  if(d.size == -1 )
     remove( fullpath.c_str() );
+  }
+  else if(d.type == 1)
+  {
+    mkdir(fullpath.c_str(),0777);
+    
+  }
+  else
+  {
+    fullpath += ".part";
+    FILE *pFile = fopen(fullpath.c_str(), "wb");	//otworz plik o podanej nazwie i zapisuj do niego
   
-  std::cout << "Jaki plik udalo sie odebrac: " << std::string(d.name) << std::endl;
+    if(d.size > 0)
+    {
+     
+      char recvbuf[256] = {0};
+      int bytesReceived=0;
+      int filesize = d.size;
+  
+      while(filesize > 0)
+      {
+	//std::cout << "bytesReceived: " << bytesReceived << std::endl;
+	
+	//std::cout << "sizeof: " << strlen(recvbuf) << std::endl;
+	bytesReceived = recv_message(recvbuf,256); 
+	int bytes_sent = fwrite(recvbuf, 1,bytesReceived,pFile);
+	filesize -= bytes_sent;
+	
+	//if(bytesReceived < 256)
+	 // break;
+	send_syn();
+      }
+    }
+    
+    fclose (pFile);
+    std::string original_name = fullpath.substr(0,fullpath.length()-5);
+    rename(fullpath.c_str(), original_name.c_str());
+  }
+  
+  std::cout << "Odebralem plik: " << std::string(d.name) << "  o rozm.: " << d.size << std::endl;
+ 
+  
   return std::string(d.name);
 }
 
@@ -191,4 +189,16 @@ int Stream::get_file_size(std::string filename)
 int Stream::get_fd()
 {
   return fd;
+}
+
+void Stream::send_syn()
+{
+  char buf[4] = "get";
+  send_message(buf,4);
+}
+
+void Stream::recv_syn()
+{
+  char buf[4];
+  recv_message(buf,4);
 }

@@ -10,9 +10,10 @@ Inotify::Inotify(const char* path)
     perror( "inotify_init" );
   }
   
-  this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE |  IN_CREATE | IN_DELETE  );
+  this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE |  IN_CREATE | IN_DELETE |IN_MOVE);
 
 };
+
 
 std::vector<std::string> Inotify::readNotify()
 {
@@ -31,8 +32,8 @@ std::vector<std::string> Inotify::readNotify()
   
   while (i < length) {
     struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
-    if ( event->len && event->name[0] != '.') {
-      if ( event->mask & IN_CLOSE_WRITE) {
+    if ( event->len && event->name[0] != '.' ) {
+      if (event->mask & IN_CLOSE_WRITE && !has_suffix(event->name,".part") ) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was created/modified.\n", event->name );
 	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
@@ -44,7 +45,7 @@ std::vector<std::string> Inotify::readNotify()
 	  red.push_back(rel_path);
         }
       }
-      else if ( event->mask & IN_DELETE ) {
+      else if ( event->mask & IN_DELETE && !has_suffix(event->name,".part")) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was deleted.\n", event->name ); 
 	  line="The directory "+std::string(event->name)+ " was deleted"; 
@@ -58,7 +59,7 @@ std::vector<std::string> Inotify::readNotify()
 	  red.push_back(rel_path);
         }
       }
-      else if ( event->mask & IN_CREATE && event->mask & IN_ISDIR) {
+      else if ( event->mask & IN_CREATE && event->mask & IN_ISDIR && !has_suffix(event->name,".part")) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was created.\n", event->name );
 	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
@@ -73,6 +74,29 @@ std::vector<std::string> Inotify::readNotify()
           printf( "The file %s was modified.\n", event->name );
 	  red.push_back(std::string(event->name));
         }*/
+      }
+      else if ( event->mask & IN_MOVED_FROM ) {
+         if(!has_suffix(event->name,".part"))
+	 {
+	  printf( "The file/directory %s was moved from.\n", event->name ); 
+	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
+	  red.push_back(rel_path);
+	 }
+	 else
+	  cookies.push_back(event->cookie);
+        
+      }
+      else if ( event->mask & IN_MOVED_TO && !has_suffix(event->name,".part")){
+        if( !is_cookie_on_vector(event->cookie) )
+	{
+	 printf( "The file/directory %s was moved to.\n", event->name ); 
+	 std::string rel_path = get_rel_path(event->wd, std::string(event->name));
+	 red.push_back(rel_path);
+	}
+	else
+	  delete_cookie(event->cookie);
+	
+	  
       }
     }
     i += EVENT_SIZE + event->len;
@@ -161,7 +185,7 @@ std::string Inotify::get_rel_path(int event_wd, std::string event_name)
 
 void Inotify::add_watch()
 {
-  this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE | IN_CREATE | IN_DELETE );
+  this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_MOVED_FROM);
 }
 
 void Inotify::remove_watch()
@@ -169,3 +193,23 @@ void Inotify::remove_watch()
   ( void ) inotify_rm_watch( fd, wd );
 }
 
+bool Inotify::has_suffix(const std::string &str, const std::string &suffix)
+{
+    return str.size() >= suffix.size() &&
+           str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+bool Inotify::is_cookie_on_vector(int cookie)
+{
+  std::vector<int>::iterator it = std::find(cookies.begin(), cookies.end(), cookie);
+  if(it != cookies.end())
+    return true;
+  else
+    return false;
+}
+
+void Inotify::delete_cookie(int cookie)
+{
+  std::vector<int>::iterator it = std::find(cookies.begin(), cookies.end(), cookie);
+  cookies.erase(it); 
+}

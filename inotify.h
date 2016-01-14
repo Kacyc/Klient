@@ -30,9 +30,11 @@ private:
   int fd;
   int wd;
   std::vector<fold_wd> subdirs;
+  std::vector<int> cookies;
 public:
   Inotify(const char* path);
   ~Inotify();
+  
   std::vector<std::string> readNotify();
   std::string addzero(int x);
   std::string returndate(const char* path);
@@ -40,7 +42,11 @@ public:
   void add_watch();
   void remove_watch();
   int get_fd();
-  std::string get_rel_path(int event_wd,std::string event_name);
+  std::string get_rel_path(int event_wd,std::string event_name);	//zwraca sciezke wzgledna do pliku o nazwie event_name
+  bool has_suffix(const std::string &str, const std::string &suffix);
+  bool is_cookie_on_vector(int cookie);
+  void delete_cookie(int cookie);
+  
 };
 
 

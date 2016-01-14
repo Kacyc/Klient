@@ -3,7 +3,8 @@
 #include <string.h>
 #include "connector.h"
 #include "stream.h"
-#include "inotify.h";
+#include "inotify.h"
+
 
 int main(int argc, char **argv) {
     
@@ -22,8 +23,8 @@ int main(int argc, char **argv) {
     int fd = connector.conn(addr, port);
     
     int nfds = 4;
-    struct pollfd fds[nfds];
-    fds[0].fd = fd;
+    struct pollfd fds[nfds];	
+    fds[0].fd = fd;	
     fds[0].events = POLLIN;
     
     fds[1].fd = 0;
@@ -33,7 +34,7 @@ int main(int argc, char **argv) {
     fds[2].events = POLLIN;
     
     
-    
+   
     
     Stream stream(fd);
     
@@ -65,9 +66,9 @@ int main(int argc, char **argv) {
 	if (fds[0].revents == 1)
 	{
 	  
-	  inotify.remove_watch();
-	  stream.recv_file(inotify.get_path());
-	  inotify.add_watch();
+	  //inotify.remove_watch();
+	  stream.recv_file(inotify.get_path());	//nastopilo zdarzenie od serwera i klient odbiera plik
+	  //inotify.add_watch();
 	  
 	  /*if(br==0)
 	  {  
@@ -79,6 +80,7 @@ int main(int argc, char **argv) {
 	}
 	else if(fds[1].revents == 1)
 	{
+	  //zdarzenie od standartowego wejscia, uzywane wczesniej do testu wysylania poszczegolnych plikow
 	  int bufsize=256;
 	  char buffer[bufsize];
 	  int bytes_read = read(0,buffer,bufsize);
@@ -89,11 +91,17 @@ int main(int argc, char **argv) {
 	}
 	else if(fds[2].revents == 1)
 	{
-	  std::cout << "inotify something happened" << std::endl; 
+	  //zdarzenia od inotify, odbieramy nazwy plikow i wysylamy je do serwera
+	  
+	  //std::cout << "inotify something happened" << std::endl; 
 	 std::vector<std::string> x = inotify.readNotify();
-	 for(std::vector<std::string>::iterator it = x.begin(); it != x.end(); ++it) {
-	  stream.send_file(inotify.get_path(),*it);
+	 for(std::vector<std::string>::iterator it = x.begin(); it != x.end(); ++it) 
+	 { 
+	   std::cout << "Przechodze do wysylania: " << *it << std::endl;
+	    stream.send_file(inotify.get_path(),*it);
+	  
 	 }
+	 
 	}
      }
     /*

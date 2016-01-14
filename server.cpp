@@ -2,6 +2,7 @@
 #include "acceptor.h"
 #include "inotify.h"
 #include "stream.h"
+#include <mutex>
 
 int main(int argc, char **argv) {
     
@@ -21,20 +22,20 @@ int main(int argc, char **argv) {
     
     
     Acceptor acceptor(addr, port);
-    acceptor.start();
+    acceptor.start();	//bind,listen itd...
     
     
     
     int nfds = 1;
     struct pollfd fds[32];
-    fds[0].fd = acceptor.get_fd();
+    fds[0].fd = acceptor.get_fd(); //deskryptor na odbior z gniazda
     fds[0].events = POLLIN;
     
    
     Stream* stream;
     Stream* new_stream;
     
-    char buffsend[] = {"Witaj\n"};
+    
     
     //stream.send_data(buffsend, sizeof(buffsend)/sizeof(char));
     
@@ -61,7 +62,7 @@ int main(int argc, char **argv) {
 	
 	if (fds[i].fd == acceptor.get_fd())
 	{
-	  
+	  //klient chce sie polaczyc i dodajemy jego deskryptor do tablicy deskryptorow
 	  int new_fd = acceptor.accp();
 	  fds[nfds].fd = new_fd;
           fds[nfds].events = POLLIN;
@@ -71,13 +72,16 @@ int main(int argc, char **argv) {
 	}
 	else
 	{
+	  //nastapilo zdarzenie od klienta
 	  stream = new Stream(fds[i].fd);
 	  int bufsize = 256;
 	  char buffer[bufsize];
 	  struct data d;
 	  
+	  //odbieramy plik od klienta
 	  std::string file_to_send = stream->recv_file(dir);
-	  std::cout << "Wszystko ok" << std::endl;
+	  
+	  //wysylamy odebrany plik pozostalym klientom
 	  for(int j=0 ; j < curr_nfds ; j++)
 	  {
 	    
@@ -102,6 +106,8 @@ int main(int argc, char **argv) {
 	  }
 	    */
 	  delete stream;
+	  
+	  
 	}
 	
      }
