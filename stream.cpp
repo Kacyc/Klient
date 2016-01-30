@@ -6,6 +6,12 @@ Stream::Stream(int filedesc)
   fd = filedesc;
 }
 
+Stream::Stream(int filedesc,Inotify *inotify)
+{
+  fd = filedesc;
+  this->inotify=inotify;
+}
+
 int Stream::send_message(char* buffer, int len)
 {
   int bytes_sent = send(fd,buffer,len,0);
@@ -143,6 +149,10 @@ std::string Stream::recv_file(std::string path)
   }
   else
   {
+    //Jeśli Inotify był podany w konstruktorze, to dodajemy plik który ma ignorować
+    if (inotify!=NULL)
+      inotify->addIgnore(fullpath);
+    
     fullpath += ".part";
     FILE *pFile = fopen(fullpath.c_str(), "wb");	//otworz plik o podanej nazwie i zapisuj do niego
   
@@ -174,7 +184,9 @@ std::string Stream::recv_file(std::string path)
   }
   
   std::cout << "Odebralem plik: " << std::string(d.name) << "  o rozm.: " << d.size << std::endl;
- 
+  
+  if (inotify!=NULL)
+    inotify->removeIgnore(fullpath);
   
   return std::string(d.name);
 }

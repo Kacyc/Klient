@@ -29,6 +29,7 @@ private:
   const char* path;
   int fd;
   int wd;
+  std::vector<std::string> ignoreList;
   std::vector<fold_wd> subdirs;
   std::vector<int> cookies;
 public:
@@ -46,7 +47,9 @@ public:
   bool has_suffix(const std::string &str, const std::string &suffix);
   bool is_cookie_on_vector(int cookie);
   void delete_cookie(int cookie);
-  
+  void addIgnore(std::string);
+  void removeIgnore(std::string);
+  bool shouldIgnore(std::string);
 };
 
 

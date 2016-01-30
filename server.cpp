@@ -18,6 +18,8 @@ int main(int argc, char **argv) {
 
     Inotify inotify(dir);
     
+    //przechowujemy listę plików
+    std::vector<std::string> filesList;
     
     
     
@@ -69,6 +71,8 @@ int main(int argc, char **argv) {
           nfds++;
 	  fds[i].revents=0;
 	  std::cout << "nazwiazano polaczenie " << nfds-1 << "->" << nfds  << std::endl;
+	  
+	  //TODO i teraz wrzucamy wszystkie pliki z listy do tego klienta
 	}
 	else
 	{
@@ -80,6 +84,11 @@ int main(int argc, char **argv) {
 	  
 	  //odbieramy plik od klienta
 	  std::string file_to_send = stream->recv_file(dir);
+	  
+	  //Jeśli plik nie znajduje się na liście, dodajemy go
+	  if(!(std::find(filesList.begin(), filesList.end(), file_to_send) != filesList.end())) {
+		filesList.push_back(file_to_send);
+	  }
 	  
 	  //wysylamy odebrany plik pozostalym klientom
 	  for(int j=0 ; j < curr_nfds ; j++)
@@ -113,4 +122,5 @@ int main(int argc, char **argv) {
      }
       
     }
+    return 0;
 }

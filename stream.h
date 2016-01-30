@@ -11,7 +11,7 @@
 #include <vector>
 #include <string.h>
 #include <sys/stat.h>
-
+#include "inotify.h"
 struct data
 {
   char name[20];
@@ -26,8 +26,10 @@ class Stream
 private:
     int fd;
     struct data d;
+    Inotify* inotify = NULL;
 public:
     Stream(int filedesc);
+    Stream(int filedesc,Inotify *inotify);
     int send_message(char* buffer, int len);
     int recv_message(char* buffer, int len);
     int send_data(std::string path, std::string filename,int filesize, int type);

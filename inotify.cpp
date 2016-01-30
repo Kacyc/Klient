@@ -213,3 +213,20 @@ void Inotify::delete_cookie(int cookie)
   std::vector<int>::iterator it = std::find(cookies.begin(), cookies.end(), cookie);
   cookies.erase(it); 
 }
+
+void Inotify::addIgnore(std::string path)
+{
+  ignoreList.push_back(path);
+}
+
+void Inotify::removeIgnore(std::string path)
+{
+  ignoreList.erase(std::remove(ignoreList.begin(), ignoreList.end(), path), ignoreList.end());
+}
+
+bool Inotify::shouldIgnore(std::string path)
+{
+  if(std::find(ignoreList.begin(), ignoreList.end(), path) != ignoreList.end()) 
+	return true;
+  else return false;
+}

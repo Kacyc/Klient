@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     
    
     
-    Stream stream(fd);
+    Stream stream(fd,&inotify);
     
     int bufsize = 256;
     char buffer[bufsize];
