@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "inotify.h"
+
 struct data
 {
   char name[20];
@@ -26,7 +27,7 @@ class Stream
 private:
     int fd;
     struct data d;
-    Inotify* inotify = NULL;
+    Inotify* inotify;
 public:
     Stream(int filedesc);
     Stream(int filedesc,Inotify *inotify);

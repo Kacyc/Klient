@@ -3,13 +3,14 @@
 
 Stream::Stream(int filedesc)
 {
-  fd = filedesc;
+  this->fd = filedesc;
+  this->inotify = NULL;
 }
 
 Stream::Stream(int filedesc,Inotify *inotify)
 {
-  fd = filedesc;
-  this->inotify=inotify;
+  this->fd = filedesc;
+  this->inotify = inotify;
 }
 
 int Stream::send_message(char* buffer, int len)
@@ -124,13 +125,17 @@ std::string Stream::recv_file(std::string path)
   
   int bytes = recv_data();	//odbierz nazwe,rozmiar itd...
   d.name[d.namesize]='\0';
+  std::string name = d.name;
   
-  //int bytes = recv_message(name,20);
   
   
-  std::string fullpath = path + "/" + std::string(d.name);
+  std::string fullpath = path + "/" + name;
   //std::string fullpath = "/home/mati/sv/a.txt";
   //std::cout << fullpath << std::endl;
+  
+  if (inotify!=NULL)
+    inotify->addIgnore(name);
+  
   
   send_syn();
   
@@ -144,16 +149,25 @@ std::string Stream::recv_file(std::string path)
   }
   else if(d.type == 1)
   {
+   
     mkdir(fullpath.c_str(),0777);
     
+   /* if (inotify!=NULL)
+    {
+      int new_wd = inotify_add_watch( inotify->get_fd(), fullpath.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |IN_MOVE); 
+      std::cout << "Dodaje nowy folder o sciezce absolutnej: " << fullpath << std::endl;
+      std::cout << "Dodaje nowy folder o sciezce wzglednej: " << name << std::endl;
+      inotify->addSubdir(name, new_wd);
+       
+    }
+    */
   }
   else
   {
     //Jeśli Inotify był podany w konstruktorze, to dodajemy plik który ma ignorować
-    if (inotify!=NULL)
-      inotify->addIgnore(fullpath);
+ 
     
-    fullpath += ".part";
+    
     FILE *pFile = fopen(fullpath.c_str(), "wb");	//otworz plik o podanej nazwie i zapisuj do niego
   
     if(d.size > 0)
@@ -179,16 +193,15 @@ std::string Stream::recv_file(std::string path)
     }
     
     fclose (pFile);
-    std::string original_name = fullpath.substr(0,fullpath.length()-5);
-    rename(fullpath.c_str(), original_name.c_str());
+    
   }
   
-  std::cout << "Odebralem plik: " << std::string(d.name) << "  o rozm.: " << d.size << std::endl;
+  std::cout << "Odebralem plik: " << name << "  o rozm.: " << d.size << std::endl;
   
-  if (inotify!=NULL)
-    inotify->removeIgnore(fullpath);
+  //if (inotify!=NULL)
+  //  inotify->removeIgnore(name);
   
-  return std::string(d.name);
+  return name;
 }
 
 int Stream::get_file_size(std::string filename)

@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     
    
     
-    Stream stream(fd,&inotify);
+    Stream stream(fd, &inotify);
     
     int bufsize = 256;
     char buffer[bufsize];
@@ -93,11 +93,11 @@ int main(int argc, char **argv) {
 	{
 	  //zdarzenia od inotify, odbieramy nazwy plikow i wysylamy je do serwera
 	  
-	  //std::cout << "inotify something happened" << std::endl; 
-	 std::vector<std::string> x = inotify.readNotify();
-	 for(std::vector<std::string>::iterator it = x.begin(); it != x.end(); ++it) 
+	  std::cout << "inotify something happened" << std::endl; 
+	 std::vector<path_name> x = inotify.readNotify();
+	 for(std::vector<path_name>::iterator it = x.begin(); it != x.end(); ++it) 
 	 { 
-	   std::cout << "Przechodze do wysylania: " << *it << std::endl;
+	   std::cout << "Przechodze do wysylania: " << (*it).name << std::endl;
 	    stream.send_file(inotify.get_path(),*it);
 	  
 	 }

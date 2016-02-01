@@ -10,18 +10,18 @@ Inotify::Inotify(const char* path)
     perror( "inotify_init" );
   }
   
-  this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE |  IN_CREATE | IN_DELETE |IN_MOVE);
+  this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE | IN_CREATE |  IN_DELETE |IN_MOVE);
 
 };
 
 
 std::vector<std::string> Inotify::readNotify()
 {
-  std::vector<std::string> red;
+  std::vector<path_name> red;
   char buffer[BUF_LEN];
   int length,i=0;
   std::string line;
-  
+  struct path_name fileToSend;
   
   length = read( fd, buffer, BUF_LEN );  
   
@@ -32,55 +32,44 @@ std::vector<std::string> Inotify::readNotify()
   
   while (i < length) {
     struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
-    if ( event->len && event->name[0] != '.' ) {
-      if (event->mask & IN_CLOSE_WRITE && !has_suffix(event->name,".part") ) {
+    if ( event->len  && event->name[0] != '.' && !shouldIgnore(event->name)) {
+      fileToSend.name = std::string(event->name);
+      fileToSend.path = get_rel_path(event->wd, fileToSend.name);
+      red.push_back(fileToSend);
+	  
+      if (event->mask & IN_CLOSE_WRITE  ) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was created/modified.\n", event->name );
-	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
-	  red.push_back(rel_path);
         }
         else {
           printf( "The file %s was created/modified.\n", event->name );
-	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
-	  red.push_back(rel_path);
         }
       }
-      else if ( event->mask & IN_DELETE && !has_suffix(event->name,".part")) {
+      else if ( event->mask & IN_DELETE ) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was deleted.\n", event->name ); 
-	  line="The directory "+std::string(event->name)+ " was deleted"; 
-	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
-	  red.push_back(rel_path);
         }
         else {
           printf( "The file %s was deleted.\n", event->name );
-	  line="The file "+std::string(event->name)+ " was deleted"; 
-	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
-	  red.push_back(rel_path);
         }
       }
-      else if ( event->mask & IN_CREATE && event->mask & IN_ISDIR && !has_suffix(event->name,".part")) {
+      else if ( event->mask & IN_CREATE && event->mask & IN_ISDIR ) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was created.\n", event->name );
-	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
-	  std::string new_abs_path = std::string(path) + "/" + rel_path; 
-	  int new_wd = inotify_add_watch( fd, new_abs_path.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_DELETE ); 
+	 
+	  std::string new_abs_path = std::string(path) + "/" + fileToSend.path + "/" + fileToSend.name; 
+	  int new_wd = inotify_add_watch( fd, new_abs_path.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |IN_MOVE); 
 	  std::cout << "Dodaje nowy folder o sciezce absolutnej: " << new_abs_path << std::endl;
-	  std::cout << "Dodaje nowy folder o sciezce wzglednej: " << rel_path << std::endl;
-	  subdirs.push_back({rel_path, new_wd});
-	  red.push_back(rel_path);
-        }/*
-        else {
-          printf( "The file %s was modified.\n", event->name );
-	  red.push_back(std::string(event->name));
-        }*/
+	  std::cout << "Dodaje nowy folder o sciezce wzglednej: " << fileToSend.path << "/" << fileToSend.name << std::endl;
+	  addSubdir(fileToSend.path+"/"+fileToSend.name, new_wd);
+        }
       }
       else if ( event->mask & IN_MOVED_FROM ) {
          if(!has_suffix(event->name,".part"))
 	 {
 	  printf( "The file/directory %s was moved from.\n", event->name ); 
 	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
-	  red.push_back(rel_path);
+	  //red.push_back(rel_path);
 	 }
 	 else
 	  cookies.push_back(event->cookie);
@@ -91,14 +80,45 @@ std::vector<std::string> Inotify::readNotify()
 	{
 	 printf( "The file/directory %s was moved to.\n", event->name ); 
 	 std::string rel_path = get_rel_path(event->wd, std::string(event->name));
-	 red.push_back(rel_path);
+	 //red.push_back(rel_path);
 	}
 	else
-	  delete_cookie(event->cookie);
-	
-	  
+	  delete_cookie(event->cookie); 
       }
     }
+    else
+    {
+     
+      std::cout << "file ignored: " << event->name << std::endl;
+      
+      if ((event->mask & IN_CLOSE_WRITE) &&  !(event->mask & IN_ISDIR)  ) {
+	std::cout << "CLOSEWRITE: " << std::endl;
+	
+	removeIgnore(event->name);
+	
+      }
+      else if((event->mask & IN_CREATE) && (event->mask & IN_ISDIR) ) 
+      {
+	std::cout << "CRAETE: " << std::endl;
+	removeIgnore(event->name);
+      }
+      else if(event->mask & IN_MOVE) {
+	std::cout << "MOVE: " << std::endl;
+	removeIgnore(event->name);
+	
+      }
+      else if(event->mask & IN_DELETE ) {
+	std::cout << "DELETE" << std::endl;
+	removeIgnore(event->name);
+      }
+        
+      
+      
+      
+      
+      
+    }
+      
     i += EVENT_SIZE + event->len;
   }
   
@@ -175,10 +195,10 @@ std::string Inotify::get_rel_path(int event_wd, std::string event_name)
   if(event_wd != wd)
   {
 	    std::vector<fold_wd>::iterator it = std::find_if(subdirs.begin(), subdirs.end(),  [&](fold_wd& f){ return f.wd == event_wd; } );
-	    rel_path = (*it).path + "/" + event_name;
+	    rel_path = (*it).path;
   }
   else
-    rel_path = event_name;
+    rel_path = "";
   
   return rel_path;
 }
@@ -216,12 +236,30 @@ void Inotify::delete_cookie(int cookie)
 
 void Inotify::addIgnore(std::string path)
 {
+  std::cout << "Ignoruje plik o nazwie: " << path << std::endl;
   ignoreList.push_back(path);
+ 
+  /*
+  std::cout << "------------- Ignorowane pliki-------------" << std::endl;
+  for(std::vector<std::string>::iterator it = ignoreList.begin(); it != ignoreList.end(); ++it) 
+    std::cout << *it << std::endl;
+    
+  std::cout << "-----------------------------------------------" << std::endl;
+*/
 }
 
 void Inotify::removeIgnore(std::string path)
 {
   ignoreList.erase(std::remove(ignoreList.begin(), ignoreList.end(), path), ignoreList.end());
+  std::cout << "Przestaje ignorowac plik o nazwie: " << path << std::endl;
+  
+  /*  std::cout << "------------- Ignorowane pliki-------------" << std::endl;
+  for(std::vector<std::string>::iterator it = ignoreList.begin(); it != ignoreList.end(); ++it) 
+    std::cout << *it << std::endl;
+    
+    std::cout << "-----------------------------------------------" << std::endl;
+
+  */
 }
 
 bool Inotify::shouldIgnore(std::string path)
@@ -229,4 +267,9 @@ bool Inotify::shouldIgnore(std::string path)
   if(std::find(ignoreList.begin(), ignoreList.end(), path) != ignoreList.end()) 
 	return true;
   else return false;
+}
+
+void Inotify::addSubdir(std::string rel_path, int wd)
+{
+  this->subdirs.push_back({rel_path, wd});
 }
