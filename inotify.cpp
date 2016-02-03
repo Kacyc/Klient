@@ -15,7 +15,7 @@ Inotify::Inotify(const char* path)
 };
 
 
-std::vector<std::string> Inotify::readNotify()
+std::vector<path_name> Inotify::readNotify()
 {
   std::vector<path_name> red;
   char buffer[BUF_LEN];
@@ -35,7 +35,7 @@ std::vector<std::string> Inotify::readNotify()
     if ( event->len  && event->name[0] != '.' && !shouldIgnore(event->name)) {
       fileToSend.name = std::string(event->name);
       fileToSend.path = get_rel_path(event->wd, fileToSend.name);
-      red.push_back(fileToSend);
+      
 	  
       if (event->mask & IN_CLOSE_WRITE  ) {
         if ( event->mask & IN_ISDIR ) {
@@ -43,14 +43,17 @@ std::vector<std::string> Inotify::readNotify()
         }
         else {
           printf( "The file %s was created/modified.\n", event->name );
+	  red.push_back(fileToSend);
         }
       }
       else if ( event->mask & IN_DELETE ) {
         if ( event->mask & IN_ISDIR ) {
-          printf( "The directory %s was deleted.\n", event->name ); 
+          printf( "The directory %s was deleted.\n", event->name );
+	  red.push_back(fileToSend);
         }
         else {
           printf( "The file %s was deleted.\n", event->name );
+	  red.push_back(fileToSend);
         }
       }
       else if ( event->mask & IN_CREATE && event->mask & IN_ISDIR ) {
@@ -62,6 +65,7 @@ std::vector<std::string> Inotify::readNotify()
 	  std::cout << "Dodaje nowy folder o sciezce absolutnej: " << new_abs_path << std::endl;
 	  std::cout << "Dodaje nowy folder o sciezce wzglednej: " << fileToSend.path << "/" << fileToSend.name << std::endl;
 	  addSubdir(fileToSend.path+"/"+fileToSend.name, new_wd);
+	  red.push_back(fileToSend);
         }
       }
       else if ( event->mask & IN_MOVED_FROM ) {
@@ -69,7 +73,7 @@ std::vector<std::string> Inotify::readNotify()
 	 {
 	  printf( "The file/directory %s was moved from.\n", event->name ); 
 	  std::string rel_path = get_rel_path(event->wd, std::string(event->name));
-	  //red.push_back(rel_path);
+	  red.push_back(fileToSend);
 	 }
 	 else
 	  cookies.push_back(event->cookie);
@@ -80,7 +84,7 @@ std::vector<std::string> Inotify::readNotify()
 	{
 	 printf( "The file/directory %s was moved to.\n", event->name ); 
 	 std::string rel_path = get_rel_path(event->wd, std::string(event->name));
-	 //red.push_back(rel_path);
+	 red.push_back(fileToSend);
 	}
 	else
 	  delete_cookie(event->cookie); 

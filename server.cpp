@@ -83,11 +83,11 @@ int main(int argc, char **argv) {
 	  struct data d;
 	  
 	  //odbieramy plik od klienta
-	  std::string file_to_send = stream->recv_file(dir);
+	  path_name file_to_send = stream->recv_file(dir);
 	  
 	  //Jeśli plik nie znajduje się na liście, dodajemy go
-	  if(!(std::find(filesList.begin(), filesList.end(), file_to_send) != filesList.end())) {
-		filesList.push_back(file_to_send);
+	  if(!(std::find(filesList.begin(), filesList.end(), file_to_send.name) != filesList.end())) {
+		filesList.push_back(file_to_send.name);
 	  }
 	  
 	  //wysylamy odebrany plik pozostalym klientom
@@ -96,9 +96,10 @@ int main(int argc, char **argv) {
 	    
 	    if( (fds[j].fd != stream->get_fd()) && (fds[j].fd != acceptor.get_fd() ) )
 	    {
-	      std::cout << "Zaraz wysylam " << file_to_send << "do deskrpytora j: " << j << std::endl;
+	      std::cout << "Zaraz wysylam " << file_to_send.name << "do deskrpytora j: " << j << std::endl;
 	      new_stream = new Stream(fds[j].fd);
 	      new_stream->send_file(dir,file_to_send);
+	      
 	      delete new_stream;
 	    }
 	    

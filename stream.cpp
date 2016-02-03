@@ -31,12 +31,11 @@ int Stream::recv_message(char* buffer, int len)
 
 int Stream::send_data(std::string path, std::string filename, int filesize, int type)
 {
-  std::string fullpath = path + "/" + std::string(filename);
-  char name[20];
+  strncpy(d.path, path.c_str(), path.length() );
+  d.pathlength = path.length();
+  
   strncpy(d.name, filename.c_str(), filename.length() );
-  
-  
-  d.namesize = filename.length();
+  d.namelength = filename.length();
   
   d.size = filesize;
   d.type = type;
@@ -57,13 +56,12 @@ int Stream::recv_data()
   return bytes_recv;
 }
 
-void Stream::send_file(std::string path, std::string filename)
+void Stream::send_file(std::string path, path_name file)
 {
   int type, filesize;
-  std::string fullpath = path + "/" + std::string(filename); 
+  std::string fullpath = path + "/" + file.path + "/" + file.name; 
   
-  char name[20];
-  strncpy(name, filename.c_str(), filename.length() );
+  
   struct stat s;
   if( stat(fullpath.c_str(),&s) == 0 )
   {
@@ -84,7 +82,7 @@ void Stream::send_file(std::string path, std::string filename)
     filesize = -1;
   }
   
-  send_data(path, filename, filesize, type);	//wyslij nazwe pliku,rozmiar itd..
+  send_data(file.path, file.name, filesize, type);	//wyslij nazwe pliku,rozmiar itd..
   
   
   recv_syn();
@@ -115,21 +113,21 @@ void Stream::send_file(std::string path, std::string filename)
   }
   fclose (pFile);  
   }
-  std::cout << "Wyslalem plik: " << filename << "  o rozm.: " << filesize << std::endl;
+  std::cout << "Wyslalem plik: " << file.path << "/" << file.name << "  o rozm.: " << filesize << std::endl;
  
 }
 
-std::string Stream::recv_file(std::string path)
+path_name Stream::recv_file(std::string path)
 {
   
   
   int bytes = recv_data();	//odbierz nazwe,rozmiar itd...
-  d.name[d.namesize]='\0';
+  d.name[d.namelength]='\0';
+  d.path[d.pathlength]='\0';
+  std::string relpath = d.path;
   std::string name = d.name;
   
-  
-  
-  std::string fullpath = path + "/" + name;
+  std::string fullpath = path + "/" + relpath + "/" + name;
   //std::string fullpath = "/home/mati/sv/a.txt";
   //std::cout << fullpath << std::endl;
   
@@ -152,7 +150,7 @@ std::string Stream::recv_file(std::string path)
    
     mkdir(fullpath.c_str(),0777);
     
-   /* if (inotify!=NULL)
+    if (inotify!=NULL)
     {
       int new_wd = inotify_add_watch( inotify->get_fd(), fullpath.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |IN_MOVE); 
       std::cout << "Dodaje nowy folder o sciezce absolutnej: " << fullpath << std::endl;
@@ -160,7 +158,7 @@ std::string Stream::recv_file(std::string path)
       inotify->addSubdir(name, new_wd);
        
     }
-    */
+    
   }
   else
   {
@@ -201,7 +199,7 @@ std::string Stream::recv_file(std::string path)
   //if (inotify!=NULL)
   //  inotify->removeIgnore(name);
   
-  return name;
+  return path_name{relpath, name};
 }
 
 int Stream::get_file_size(std::string filename)

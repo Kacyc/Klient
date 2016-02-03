@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
 	  int bytes_read = read(0,buffer,bufsize);
 	  buffer[bytes_read-1] = '\0';
 	  std::cout << "read len: " << strlen(buffer) << std::endl;
-	  stream.send_file("/home/mati/test",buffer);
+	  //stream.send_file("/home/mati/test",buffer);
 	  //stream.send_message(buffer,bytes_read); 
 	}
 	else if(fds[2].revents == 1)
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 	 for(std::vector<path_name>::iterator it = x.begin(); it != x.end(); ++it) 
 	 { 
 	   std::cout << "Przechodze do wysylania: " << (*it).name << std::endl;
-	    stream.send_file(inotify.get_path(),*it);
+	    stream.send_file(inotify.get_path(), *it);
 	  
 	 }
 	 

@@ -16,7 +16,9 @@
 struct data
 {
   char name[20];
-  int namesize;
+  int namelength;
+  char path[20];
+  int pathlength;
   int size;
   int type; //0-file, 1-direcotry
 };
@@ -37,8 +39,8 @@ public:
     void send_syn();
     void recv_syn();
     int recv_data();
-    void send_file(std::string path, std::string filename );
-    std::string recv_file(std::string path);
+    void send_file(std::string path, path_name file);
+    path_name recv_file(std::string path);
     int get_file_size(std::string filename);
     std::string append_part(int size);
     int get_fd();
