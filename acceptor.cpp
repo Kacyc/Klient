@@ -51,7 +51,7 @@ int Acceptor::accp()
     socklen_t sizeofclient_struct;
   
     
-    fd = accept(lsfd, (sockaddr*) &client_struct, &sizeofclient_struct);
+    fd = accept(lsfd, (sockaddr*) NULL, NULL);
     
     return fd;
 }

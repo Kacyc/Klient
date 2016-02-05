@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     Inotify inotify(dir);
     
     //przechowujemy listę plików
-    std::vector<std::string> filesList;
+    std::vector<path_name> filesList;
     
     
     
@@ -73,6 +73,14 @@ int main(int argc, char **argv) {
 	  std::cout << "nazwiazano polaczenie " << nfds-1 << "->" << nfds  << std::endl;
 	  
 	  //TODO i teraz wrzucamy wszystkie pliki z listy do tego klienta
+	  
+	  new_stream = new Stream(new_fd);
+	for(std::vector<path_name>::iterator it = filesList.begin(); it != filesList.end(); ++it) 
+	{ 
+	  std::cout << "Zaraz wysylam " << (*it).name << " do deskrpytora j: " << new_fd << std::endl;
+	  new_stream->send_file(dir,*it);
+	}
+	delete new_stream;  
 	}
 	else
 	{
@@ -86,9 +94,14 @@ int main(int argc, char **argv) {
 	  path_name file_to_send = stream->recv_file(dir);
 	  
 	  //Jeśli plik nie znajduje się na liście, dodajemy go
-	  if(!(std::find(filesList.begin(), filesList.end(), file_to_send.name) != filesList.end())) {
-		filesList.push_back(file_to_send.name);
+	  std::vector<path_name>::iterator it;
+	  for(it = filesList.begin(); it != filesList.end(); ++it) 
+	  { 
+	    if (it->path==file_to_send.path&&it->name==file_to_send.name)
+	      break;
 	  }
+	  if (it == filesList.end())
+	    filesList.push_back(file_to_send);
 	  
 	  //wysylamy odebrany plik pozostalym klientom
 	  for(int j=0 ; j < curr_nfds ; j++)
