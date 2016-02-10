@@ -30,6 +30,7 @@ private:
     int fd;
     struct data d;
     Inotify* inotify;
+    bool last_delete;
 public:
     Stream(int filedesc);
     Stream(int filedesc,Inotify *inotify);
@@ -44,6 +45,7 @@ public:
     int get_file_size(std::string filename);
     std::string append_part(int size);
     int get_fd();
+    bool get_last_delete();
 };
 
 

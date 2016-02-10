@@ -120,7 +120,7 @@ void Stream::send_file(std::string path, path_name file)
 
 path_name Stream::recv_file(std::string path)
 {
-  
+  last_delete=false;
   
   int bytes = recv_data();	//odbierz nazwe,rozmiar itd...
   d.name[d.namelength]='\0';
@@ -146,6 +146,7 @@ path_name Stream::recv_file(std::string path)
   {
     
     remove( fullpath.c_str() );
+    last_delete=true;
   }
   else if(d.type == 1)
   {
@@ -226,4 +227,9 @@ void Stream::recv_syn()
 {
   char buf[4];
   recv_message(buf,4);
+}
+
+bool Stream::get_last_delete()
+{
+  return last_delete;
 }

@@ -3,7 +3,7 @@
 #include "inotify.h"
 #include "stream.h"
 #include <mutex>
-
+#include<algorithm>
 int main(int argc, char **argv) {
     
   
@@ -66,9 +66,23 @@ int main(int argc, char **argv) {
 	{
 	  //klient chce sie polaczyc i dodajemy jego deskryptor do tablicy deskryptorow
 	  int new_fd = acceptor.accp();
-	  fds[nfds].fd = new_fd;
-          fds[nfds].events = POLLIN;
-          nfds++;
+	  int empty =-1;
+	  for (int i = 0;i<nfds;i++)
+	  {
+	    if (fds[i].fd==-1) 
+	    {
+	      empty = i;
+	    }
+	  }
+	  if (empty == -1)
+	  {
+	    fds[nfds].fd = new_fd;
+	    fds[nfds].events = POLLIN;
+	    nfds++;
+	  } else
+	  {
+	    fds[i].fd=new_fd;
+	  }
 	  fds[i].revents=0;
 	  std::cout << "nazwiazano polaczenie " << nfds-1 << "->" << nfds  << std::endl;
 	  
@@ -93,21 +107,37 @@ int main(int argc, char **argv) {
 	  //odbieramy plik od klienta
 	  path_name file_to_send = stream->recv_file(dir);
 	  
-	  //Jeśli plik nie znajduje się na liście, dodajemy go
-	  std::vector<path_name>::iterator it;
-	  for(it = filesList.begin(); it != filesList.end(); ++it) 
-	  { 
-	    if (it->path==file_to_send.path&&it->name==file_to_send.name)
-	      break;
+	  //jeśli było to usunięcie pliku usuwamy go z listy
+	  if (stream->get_last_delete()==true)
+	  {
+	    std::vector<path_name>::iterator it;
+	    for(it = filesList.begin(); it != filesList.end(); ++it) 
+	    { 
+	      if (it->path==file_to_send.path&&it->name==file_to_send.name)
+	      {
+		filesList.erase(it);
+		break;
+	      }
+	    }
 	  }
-	  if (it == filesList.end())
-	    filesList.push_back(file_to_send);
+	  else
+	  {
+	    //Jeśli plik nie znajduje się na liście, dodajemy go
+	    std::vector<path_name>::iterator it;
+	    for(it = filesList.begin(); it != filesList.end(); ++it) 
+	    { 
+	      if (it->path==file_to_send.path&&it->name==file_to_send.name)
+		break;
+	    }
+	    if (it == filesList.end())
+	      filesList.push_back(file_to_send);
+	  }
 	  
 	  //wysylamy odebrany plik pozostalym klientom
 	  for(int j=0 ; j < curr_nfds ; j++)
 	  {
 	    
-	    if( (fds[j].fd != stream->get_fd()) && (fds[j].fd != acceptor.get_fd() ) )
+	    if( (fds[j].fd != stream->get_fd()) && (fds[j].fd != acceptor.get_fd()) && (fds[j].fd !=-1 ) )
 	    {
 	      std::cout << "Zaraz wysylam " << file_to_send.name << " do deskrpytora j: " << j << std::endl;
 	      new_stream = new Stream(fds[j].fd);
