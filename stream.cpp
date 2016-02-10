@@ -24,7 +24,7 @@ int Stream::recv_message(char* buffer, int len)
 { 
   int bytes_recv = recv(fd, buffer, len, 0);
   
-  buffer[bytes_recv] = '\0';
+  
   //std::cout << buffer << std::endl;
   return bytes_recv;
 }
@@ -59,7 +59,7 @@ int Stream::recv_data()
 void Stream::send_file(std::string path, path_name file)
 {
   int type, filesize;
-  std::string fullpath = path + "/" + file.path + "/" + file.name; 
+  std::string fullpath = path + "/" + file.path + file.name; 
   
   
   struct stat s;
@@ -115,6 +115,7 @@ void Stream::send_file(std::string path, path_name file)
   }
   std::cout << "Wyslalem plik: " << file.path << "/" << file.name << "  o rozm.: " << filesize << std::endl;
  
+
 }
 
 path_name Stream::recv_file(std::string path)
@@ -126,8 +127,9 @@ path_name Stream::recv_file(std::string path)
   d.path[d.pathlength]='\0';
   std::string relpath = d.path;
   std::string name = d.name;
+  struct path_name recvdfile = {relpath, name};
+  std::string fullpath = path + "/" + relpath + name;
   
-  std::string fullpath = path + "/" + relpath + "/" + name;
   //std::string fullpath = "/home/mati/sv/a.txt";
   //std::cout << fullpath << std::endl;
   
@@ -155,7 +157,7 @@ path_name Stream::recv_file(std::string path)
       int new_wd = inotify_add_watch( inotify->get_fd(), fullpath.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |IN_MOVE); 
       std::cout << "Dodaje nowy folder o sciezce absolutnej: " << fullpath << std::endl;
       std::cout << "Dodaje nowy folder o sciezce wzglednej: " << name << std::endl;
-      inotify->addSubdir(name, new_wd);
+      inotify->addSubdir(relpath+name, new_wd);
        
     }
     
@@ -199,7 +201,7 @@ path_name Stream::recv_file(std::string path)
   //if (inotify!=NULL)
   //  inotify->removeIgnore(name);
   
-  return path_name{relpath, name};
+  return recvdfile;
 }
 
 int Stream::get_file_size(std::string filename)

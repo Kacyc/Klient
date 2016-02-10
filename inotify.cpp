@@ -60,11 +60,11 @@ std::vector<path_name> Inotify::readNotify()
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was created.\n", event->name );
 	 
-	  std::string new_abs_path = std::string(path) + "/" + fileToSend.path + "/" + fileToSend.name; 
+	  std::string new_abs_path = std::string(path) + "/" + fileToSend.path + fileToSend.name; 
 	  int new_wd = inotify_add_watch( fd, new_abs_path.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |IN_MOVE); 
 	  std::cout << "Dodaje nowy folder o sciezce absolutnej: " << new_abs_path << std::endl;
-	  std::cout << "Dodaje nowy folder o sciezce wzglednej: " << fileToSend.path << "/" << fileToSend.name << std::endl;
-	  addSubdir(fileToSend.path+"/"+fileToSend.name, new_wd);
+	  std::cout << "Dodaje nowy folder o sciezce wzglednej: " << fileToSend.path << fileToSend.name << std::endl;
+	  addSubdir(fileToSend.path+fileToSend.name, new_wd);
 	  red.push_back(fileToSend);
         }
       }
@@ -199,7 +199,7 @@ std::string Inotify::get_rel_path(int event_wd, std::string event_name)
   if(event_wd != wd)
   {
 	    std::vector<fold_wd>::iterator it = std::find_if(subdirs.begin(), subdirs.end(),  [&](fold_wd& f){ return f.wd == event_wd; } );
-	    rel_path = (*it).path;
+	    rel_path = (*it).path + "/";
   }
   else
     rel_path = "";

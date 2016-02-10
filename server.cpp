@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     
     while(nfds)
     {
-      int rv = poll(fds, nfds, 3*60*1000);
+      int rv = poll(fds, nfds, 3*60*10000);
       if(rv == -1){
 	perror("poll error");
       }
@@ -75,11 +75,11 @@ int main(int argc, char **argv) {
 	  //TODO i teraz wrzucamy wszystkie pliki z listy do tego klienta
 	  
 	  new_stream = new Stream(new_fd);
-	for(std::vector<path_name>::iterator it = filesList.begin(); it != filesList.end(); ++it) 
-	{ 
-	  std::cout << "Zaraz wysylam " << (*it).name << " do deskrpytora j: " << new_fd << std::endl;
-	  new_stream->send_file(dir,*it);
-	}
+	  for(std::vector<path_name>::iterator it = filesList.begin(); it != filesList.end(); ++it) 
+	  { 
+	    std::cout << "Zaraz wysylam " << (*it).name << "  do deskrpytora j: " << new_fd << std::endl;
+	    new_stream->send_file(dir,*it);
+	  }
 	delete new_stream;  
 	}
 	else
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 	    
 	    if( (fds[j].fd != stream->get_fd()) && (fds[j].fd != acceptor.get_fd() ) )
 	    {
-	      std::cout << "Zaraz wysylam " << file_to_send.name << "do deskrpytora j: " << j << std::endl;
+	      std::cout << "Zaraz wysylam " << file_to_send.name << " do deskrpytora j: " << j << std::endl;
 	      new_stream = new Stream(fds[j].fd);
 	      new_stream->send_file(dir,file_to_send);
 	      
