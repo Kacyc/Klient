@@ -4,6 +4,18 @@
 #include "connector.h"
 #include "stream.h"
 #include "inotify.h"
+#include <signal.h>
+
+int FD;
+
+void terminationProtocol(int signal)
+{
+  Stream stream(FD);
+  struct path_name p ={"GOOD","BYE"};
+  stream.send_file("", p);
+  exit(0);
+}
+
 
 
 int main(int argc, char **argv) {
@@ -21,7 +33,7 @@ int main(int argc, char **argv) {
     
     Connector connector;
     int fd = connector.conn(addr, port);
-    
+    FD=fd;
     int nfds = 4;
     struct pollfd fds[nfds];	
     fds[0].fd = fd;	
@@ -48,7 +60,7 @@ int main(int argc, char **argv) {
     
     
     //char buffsend[] = {"Czesc "};
-    
+    signal(SIGINT,terminationProtocol);
     
     while(1)
     {

@@ -61,6 +61,11 @@ void Stream::send_file(std::string path, path_name file)
   int type, filesize;
   std::string fullpath = path + "/" + file.path + file.name; 
   
+  if(file.path=="GOOD"&&file.name=="BYE")
+  {
+    send_data(file.path, file.name, filesize, type);
+    return;
+  }
   
   struct stat s;
   if( stat(fullpath.c_str(),&s) == 0 )
@@ -128,6 +133,10 @@ path_name Stream::recv_file(std::string path)
   std::string relpath = d.path;
   std::string name = d.name;
   struct path_name recvdfile = {relpath, name};
+  if(relpath=="GOOD"&&name=="BYE")
+  {
+    return recvdfile;
+  }
   std::string fullpath = path + "/" + relpath + name;
   
   //std::string fullpath = "/home/mati/sv/a.txt";

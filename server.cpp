@@ -106,7 +106,12 @@ int main(int argc, char **argv) {
 	  
 	  //odbieramy plik od klienta
 	  path_name file_to_send = stream->recv_file(dir);
-	  
+	  if(file_to_send.path=="GOOD"&&file_to_send.name=="BYE")
+	  {
+	    std::cout<<"Rozlaczenie klienta"<<std::endl;
+	    fds[i].fd=-1;
+	  } else
+	  {
 	  //jeśli było to usunięcie pliku usuwamy go z listy
 	  if (stream->get_last_delete()==true)
 	  {
@@ -139,7 +144,7 @@ int main(int argc, char **argv) {
 	    
 	    if( (fds[j].fd != stream->get_fd()) && (fds[j].fd != acceptor.get_fd()) && (fds[j].fd !=-1 ) )
 	    {
-	      std::cout << "Zaraz wysylam " << file_to_send.name << " do deskrpytora j: " << j << std::endl;
+	      std::cout << "Zaraz wysylam " << file_to_send.name << " do deskryptora j: " << j << std::endl;
 	      new_stream = new Stream(fds[j].fd);
 	      new_stream->send_file(dir,file_to_send);
 	      
@@ -159,7 +164,7 @@ int main(int argc, char **argv) {
 	  }
 	    */
 	  delete stream;
-	  
+	  }
 	  
 	}
 	
