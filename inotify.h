@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <stdio.h>
+#include <dirent.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <sstream>
@@ -59,6 +60,9 @@ public:
   void addSubdir(std::string rel_path, int wd);
   void removeIgnore(std::string);
   bool shouldIgnore(std::string);
+  std::vector<path_name> listrecursive(std::string path);
+  std::vector<path_name> listdir(std::string path, std::string folder);
+  
 };
 
 

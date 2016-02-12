@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     
     while(nfds)
     {
-      int rv = poll(fds, nfds, 3*60*10000);
+      int rv = poll(fds, nfds, -1/*3*60*1000000*/);
       if(rv == -1){
 	perror("poll error");
       }

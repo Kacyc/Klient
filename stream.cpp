@@ -113,7 +113,7 @@ void Stream::send_file(std::string path, path_name file)
   }
   fclose (pFile);  
   }
-  std::cout << "Wyslalem plik: " << file.path << "/" << file.name << "  o rozm.: " << filesize << std::endl;
+  std::cout << "Wyslalem plik: " << file.path  << file.name << "  o rozm.: " << filesize << std::endl;
  
 
 }

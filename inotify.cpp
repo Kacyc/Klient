@@ -59,13 +59,18 @@ std::vector<path_name> Inotify::readNotify()
       else if ( event->mask & IN_CREATE && event->mask & IN_ISDIR ) {
         if ( event->mask & IN_ISDIR ) {
           printf( "The directory %s was created.\n", event->name );
-	 
-	  std::string new_abs_path = std::string(path) + "/" + fileToSend.path + fileToSend.name; 
+	  red.push_back(fileToSend);
+	  
+	  
+	  std::string new_abs_path = std::string(path) + "/" + fileToSend.path + fileToSend.name;
+	  std::vector<path_name> tempred = listdir(new_abs_path,fileToSend.name);
+	  red.insert(red.end(), tempred.begin(), tempred.end() );
+	  
 	  int new_wd = inotify_add_watch( fd, new_abs_path.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |IN_MOVE); 
 	  std::cout << "Dodaje nowy folder o sciezce absolutnej: " << new_abs_path << std::endl;
 	  std::cout << "Dodaje nowy folder o sciezce wzglednej: " << fileToSend.path << fileToSend.name << std::endl;
 	  addSubdir(fileToSend.path+fileToSend.name, new_wd);
-	  red.push_back(fileToSend);
+	  
         }
       }
       else if ( event->mask & IN_MOVED_FROM ) {
@@ -277,3 +282,49 @@ void Inotify::addSubdir(std::string rel_path, int wd)
 {
   this->subdirs.push_back({rel_path, wd});
 }
+
+std::vector<path_name> Inotify::listrecursive(std::string path) {
+  std::vector<path_name> fileList;
+  struct dirent *entry;
+  DIR *dp;
+
+  dp = opendir(path.c_str());
+  if (dp == NULL) {
+    perror("opendir");
+  }
+  
+  std::cout << "IN: " << path << std::endl;
+  while((entry = readdir(dp)))
+  {
+    if(entry->d_name[0] == '.')
+      continue;
+    
+    
+    std::cout << entry->d_name << std::endl;
+    fileList.push_back({"",std::string(entry->d_name)});
+    
+    if(entry->d_type == DT_DIR)
+    {
+      path += "/"+std::string(entry->d_name);
+      std::vector<path_name> tempList = listrecursive(std::string(path));
+      for ( auto i = tempList.begin(); i != tempList.end(); i++ ) {
+	(*i).path.insert(0, std::string(entry->d_name)+"/");
+      }
+      fileList.insert(fileList.end(), tempList.begin(), tempList.end() );
+    }
+  }
+  closedir(dp);
+  return fileList;
+}
+
+std::vector< path_name > Inotify::listdir(std::string path, std::string folder)
+{
+  std::vector<path_name> list = listrecursive(path);
+  
+  for ( auto i = list.begin(); i != list.end(); i++ ) {
+	(*i).path.insert(0, folder+"/");
+      }
+      
+  return list;
+}
+
