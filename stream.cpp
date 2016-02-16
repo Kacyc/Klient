@@ -164,11 +164,7 @@ path_name Stream::recv_file(std::string path)
     
     if (inotify!=NULL)
     {
-      int new_wd = inotify_add_watch( inotify->get_fd(), fullpath.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |IN_MOVE); 
-      std::cout << "Dodaje nowy folder o sciezce absolutnej: " << fullpath << std::endl;
-      std::cout << "Dodaje nowy folder o sciezce wzglednej: " << name << std::endl;
-      inotify->addSubdir(relpath+name, new_wd);
-       
+      inotify->add_watch(relpath,name);    
     }
     
   }

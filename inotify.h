@@ -49,8 +49,8 @@ public:
   std::string addzero(int x);
   std::string returndate(const char* path);
   std::string get_path();
-  void add_watch();
-  void remove_watch();
+  void add_watch(std::string relpath, std::string name);
+  void remove_watch(std::string path);
   int get_fd();
   std::string get_rel_path(int event_wd,std::string event_name);	//zwraca sciezke wzgledna do pliku o nazwie event_name (bez nazwy)
   bool has_suffix(const std::string &str, const std::string &suffix);
@@ -58,10 +58,15 @@ public:
   void delete_cookie(int cookie);
   void addIgnore(std::string);
   void addSubdir(std::string rel_path, int wd);
+  int removeSubdir(std::string path);
   void removeIgnore(std::string);
   bool shouldIgnore(std::string);
+  bool fileExists(std::string fullpath);
+  bool isFolder(std::string fullpath);
   std::vector<path_name> listrecursive(std::string path);
   std::vector<path_name> listdir(std::string path, std::string folder);
+  std::string findfullpath(std::string path, path_name filename, bool& found);
+  path_name findrelpath(std::string path, path_name filename);
   
 };
 
