@@ -50,12 +50,6 @@ int main(int argc, char **argv) {
     
     Stream stream(fd, &inotify);
     
-    int bufsize = 256;
-    char buffer[bufsize];
-    char buffsend[24];
-    //strncpy (buffer, date.c_str(), date.length() );
-    //stream.send_message(buffer, bufsize);
-    
     //int br = stream.recv_data(buffer, bufsize);
     
     
@@ -64,7 +58,7 @@ int main(int argc, char **argv) {
     
     while(1)
     {
-      int rv = poll(fds, nfds, 3*60*1000);
+      int rv = poll(fds, nfds, -1/*3*60*1000*/);
       if(rv == -1){
 	perror("poll error");
       }

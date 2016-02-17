@@ -47,8 +47,8 @@ void Acceptor::start()
 int Acceptor::accp()
 {
     
-    sockaddr_in client_struct;
-    socklen_t sizeofclient_struct;
+    //sockaddr_in client_struct;
+    //socklen_t sizeofclient_struct;
   
     
     fd = accept(lsfd, (sockaddr*) NULL, NULL);

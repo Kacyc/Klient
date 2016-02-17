@@ -2,7 +2,6 @@
 #include "acceptor.h"
 #include "inotify.h"
 #include "stream.h"
-#include <mutex>
 #include<algorithm>
 int main(int argc, char **argv) {
     
@@ -14,7 +13,7 @@ int main(int argc, char **argv) {
     
     const char* addr = "127.0.0.1";
     int port = 1330;
-    int nconnections = 1;
+    
 
     Inotify inotify(dir);
     
@@ -100,9 +99,7 @@ int main(int argc, char **argv) {
 	{
 	  //nastapilo zdarzenie od klienta
 	  stream = new Stream(fds[i].fd);
-	  int bufsize = 256;
-	  char buffer[bufsize];
-	  struct data d;
+	  
 	  
 	  //odbieramy plik od klienta
 	  path_name file_to_send = stream->recv_file(dir);

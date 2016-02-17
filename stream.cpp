@@ -24,8 +24,6 @@ int Stream::recv_message(char* buffer, int len)
 { 
   int bytes_recv = recv(fd, buffer, len, 0);
   
-  
-  //std::cout << buffer << std::endl;
   return bytes_recv;
 }
 
@@ -58,7 +56,7 @@ int Stream::recv_data()
 
 void Stream::send_file(std::string path, path_name file)
 {
-  int type, filesize;
+  int type=0, filesize=0;
   std::string fullpath = path + "/" + file.path + file.name; 
   
   if(file.path=="GOOD"&&file.name=="BYE")
@@ -127,7 +125,7 @@ path_name Stream::recv_file(std::string path)
 {
   last_delete=false;
   
-  int bytes = recv_data();	//odbierz nazwe,rozmiar itd...
+  recv_data();	//odbierz nazwe,rozmiar itd...
   d.name[d.namelength]='\0';
   d.path[d.pathlength]='\0';
   std::string relpath = d.path;
@@ -154,13 +152,17 @@ path_name Stream::recv_file(std::string path)
   if(d.size == -1)
   {
     
-    remove( fullpath.c_str() );
+    remove(fullpath.c_str());
+  
+    
     last_delete=true;
   }
   else if(d.type == 1)
   {
    
+   
     mkdir(fullpath.c_str(),0777);
+    
     
     if (inotify!=NULL)
     {

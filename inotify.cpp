@@ -12,6 +12,7 @@ Inotify::Inotify(const char* path)
   
   this->wd = inotify_add_watch( fd, path, IN_CLOSE_WRITE | IN_CREATE |  IN_DELETE | IN_MOVE);
 
+  this->isFolderToRename = false;
 };
 
 
@@ -480,4 +481,24 @@ bool Inotify::isFolder(std::string fullpath)
     }
     else
       return false;
+}
+
+std::string Inotify::getPrevFolderName()
+{
+  return prevFolderName;
+}
+
+void Inotify::setIsFolderToRename(bool value)
+{
+  isFolderToRename = value;
+}
+
+void Inotify::setPrevFolderName(std::string path)
+{
+  prevFolderName = path;
+}
+
+bool Inotify::getIsFolderToRename()
+{
+  return isFolderToRename;
 }

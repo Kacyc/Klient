@@ -38,6 +38,8 @@ private:
   const char* path;
   int fd;
   int wd;
+  bool isFolderToRename;
+  std::string prevFolderName;
   std::vector<std::string> ignoreList;
   std::vector<fold_wd> subdirs;
   std::vector<int> cookies;
@@ -67,7 +69,10 @@ public:
   std::vector<path_name> listdir(std::string path, std::string folder);
   std::string findfullpath(std::string path, path_name filename, bool& found);
   path_name findrelpath(std::string path, path_name filename);
-  
+  std::string getPrevFolderName();
+  bool getIsFolderToRename();
+  void setPrevFolderName(std::string path);
+  void setIsFolderToRename(bool value);
 };
 
 
