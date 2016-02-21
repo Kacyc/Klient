@@ -1,13 +1,17 @@
 #include <iostream>
 #include <poll.h>
 #include <string.h>
+#include <signal.h>
+
 #include "connector.h"
 #include "stream.h"
 #include "inotify.h"
-#include <signal.h>
-
+#include "filehandlernormal.h"
+#include "filehandlerremove.h"
+#include "filehandlerfolder.h"
+#include "filehandlermove.h"
 int FD;
-
+/*
 void terminationProtocol(int signal)
 {
   Stream stream(FD);
@@ -15,7 +19,7 @@ void terminationProtocol(int signal)
   stream.send_file("", p);
   exit(0);
 }
-
+*/
 
 
 int main(int argc, char **argv) {
@@ -34,7 +38,7 @@ int main(int argc, char **argv) {
     Connector connector;
     int fd = connector.conn(addr, port);
     FD=fd;
-    int nfds = 4;
+    int nfds = 3;
     struct pollfd fds[nfds];	
     fds[0].fd = fd;	
     fds[0].events = POLLIN;
@@ -54,7 +58,7 @@ int main(int argc, char **argv) {
     
     
     //char buffsend[] = {"Czesc "};
-    signal(SIGINT,terminationProtocol);
+    //signal(SIGINT,terminationProtocol);
     
     while(1)
     {
@@ -73,7 +77,8 @@ int main(int argc, char **argv) {
 	{
 	  
 	  //inotify.remove_watch();
-	  stream.recv_file(inotify.get_path());	//nastopilo zdarzenie od serwera i klient odbiera plik
+	  FileHandler* fh = stream.recv_file(dir,&inotify);	//nastopilo zdarzenie od serwera i klient odbiera plik
+	  delete fh;
 	  //inotify.add_watch();
 	  
 	  /*if(br==0)
@@ -100,25 +105,18 @@ int main(int argc, char **argv) {
 	  //zdarzenia od inotify, odbieramy nazwy plikow i wysylamy je do serwera
 	  
 	  //std::cout << "inotify something happened" << std::endl; 
-	 std::vector<path_name> x = inotify.readNotify();
-	 for(std::vector<path_name>::iterator it = x.begin(); it != x.end(); ++it) 
+	 std::vector<FileHandler*> x = inotify.readNotify();
+	 for(std::vector<FileHandler*>::iterator it = x.begin(); it != x.end(); ++it) 
 	 { 
 	   //std::cout << "Przechodze do wysylania: " << (*it).name << std::endl;
-	    stream.send_file(inotify.get_path(), *it);
-	  
+	    stream.send_file(dir, (*it), &inotify);
+	    delete (*it);
 	 }
 	 
 	}
+
      }
-    /*
-    std::cin >> buffsend;
-    std::cout << "Preparing to send" << std::endl;
-    stream.send_data(buffsend, sizeof(buffsend)/sizeof(char));
     
-    
-    
-    std::cout << "Sent " <<std::endl;
-    */
     
     return 0;
 }

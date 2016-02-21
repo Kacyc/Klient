@@ -1,8 +1,14 @@
 #include <poll.h>
+#include<algorithm>
 #include "acceptor.h"
 #include "inotify.h"
 #include "stream.h"
-#include<algorithm>
+
+#include "filehandlernormal.h"
+#include "filehandlerremove.h"
+#include "filehandlerfolder.h"
+#include "filehandlermove.h"
+
 int main(int argc, char **argv) {
     
   
@@ -15,10 +21,10 @@ int main(int argc, char **argv) {
     int port = 1330;
     
 
-    Inotify inotify(dir);
+   
     
     //przechowujemy listę plików
-    std::vector<path_name> filesList;
+   //std::vector<path_name> filesList;
     
     
     
@@ -38,7 +44,7 @@ int main(int argc, char **argv) {
     
     
     
-    //stream.send_data(buffsend, sizeof(buffsend)/sizeof(char));
+    
     
     
     
@@ -87,13 +93,13 @@ int main(int argc, char **argv) {
 	  
 	  //TODO i teraz wrzucamy wszystkie pliki z listy do tego klienta
 	  
-	  new_stream = new Stream(new_fd);
+	/*  new_stream = new Stream(new_fd);
 	  for(std::vector<path_name>::iterator it = filesList.begin(); it != filesList.end(); ++it) 
 	  { 
 	    std::cout << "Zaraz wysylam " << (*it).name << "  do deskrpytora j: " << new_fd << std::endl;
 	    new_stream->send_file(dir,*it);
 	  }
-	delete new_stream;  
+	delete new_stream;*/  
 	}
 	else
 	{
@@ -102,8 +108,8 @@ int main(int argc, char **argv) {
 	  
 	  
 	  //odbieramy plik od klienta
-	  path_name file_to_send = stream->recv_file(dir);
-	  if(file_to_send.path=="GOOD"&&file_to_send.name=="BYE")
+	  FileHandler* file_to_send = stream->recv_file(dir);
+	  /*if(file_to_send.path=="GOOD"&&file_to_send.name=="BYE")
 	  {
 	    std::cout<<"Rozlaczenie klienta"<<std::endl;
 	    fds[i].fd=-1;
@@ -134,14 +140,14 @@ int main(int argc, char **argv) {
 	    if (it == filesList.end())
 	      filesList.push_back(file_to_send);
 	  }
-	  
+	  */
 	  //wysylamy odebrany plik pozostalym klientom
 	  for(int j=0 ; j < curr_nfds ; j++)
 	  {
 	    
 	    if( (fds[j].fd != stream->get_fd()) && (fds[j].fd != acceptor.get_fd()) && (fds[j].fd !=-1 ) )
 	    {
-	      std::cout << "Zaraz wysylam " << file_to_send.name << " do deskryptora j: " << j << std::endl;
+	      std::cout << "Zaraz wysylam " << file_to_send->getName() << " do deskryptora j: " << j << std::endl;
 	      new_stream = new Stream(fds[j].fd);
 	      new_stream->send_file(dir,file_to_send);
 	      
@@ -150,22 +156,14 @@ int main(int argc, char **argv) {
 	    
 	  }
 	  
-	  //int br = stream->recv_message(buffer, bufsize);
-	  
-	  
-	  /*if(br==0)
-	  {  
-	    std::cout << "connection lost: " << nfds << "->" <<nfds-1   << std::endl;
-	    nfds--;
-	    break;
-	  }
-	    */
+
+	  delete file_to_send;
 	  delete stream;
 	  }
 	  
 	}
 	
-     }
+     
       
     }
     return 0;

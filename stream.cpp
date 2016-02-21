@@ -1,5 +1,5 @@
 #include "stream.h"
-
+#include "inotify.h"
 
 Stream::Stream(int filedesc)
 {
@@ -27,106 +27,100 @@ int Stream::recv_message(char* buffer, int len)
   return bytes_recv;
 }
 
-int Stream::send_data(std::string path, std::string filename, int filesize, int type)
+int Stream::send_data(std::string path, FileHandler* file)
 {
-  strncpy(d.path, path.c_str(), path.length() );
-  d.pathlength = path.length();
+  d.pathnamelength = (file->getRelPathName()).length(); 
+  strncpy(d.pathname, (file->getRelPathName()).c_str(), d.pathnamelength);
   
-  strncpy(d.name, filename.c_str(), filename.length() );
-  d.namelength = filename.length();
   
-  d.size = filesize;
-  d.type = type;
+  d.size = file->getActualFileSize(path);
+  d.type = file->getType();
   
+  std::cout << "WDATA: " << std::string(d.pathname) << "  o typie: " << d.type << std::endl;
+  
+  if(d.type == 3)
+  {
+   FileHandlerMove* moved = dynamic_cast<FileHandlerMove*>(file);
+
+   d.prevpathnamelength = (moved->getPrevRelPathName()).length(); 
+   strncpy(d.prevpathname, (moved->getPrevRelPathName()).c_str(), d.prevpathnamelength);
+  }
   
   int bytes_sent = send(fd,&d,sizeof(d),0);
   
   return bytes_sent;
 };
 
-int Stream::recv_data()
+FileHandler* Stream::recv_data()
 {
-  int bytes_recv = recv(fd, &d, sizeof(d), 0);
+  recv(fd, &d, sizeof(d), 0);
+  d.pathname[d.pathnamelength]='\0';
   
-  //std::cout << "File: " << d.name << " has: " << d.size << " bytes.  " << d.namesize << std::endl;
-  //name = d.name;
-  //filesize = d.size;
-  return bytes_recv;
+  FileHandler* pFileHandler;
+  
+   std::cout << "ODATA: " << d.pathname << "  o typie: " << d.type << std::endl;
+  
+  switch(d.type)
+  {
+    case 0:    
+      pFileHandler = new FileHandlerNormal(std::string(d.pathname), d.type, d.size);
+      break;
+    case 1:
+      pFileHandler = new FileHandlerFolder(std::string(d.pathname), d.type, d.size);
+      break;
+    case 2:
+      pFileHandler = new FileHandlerRemove(std::string(d.pathname), d.type, d.size);
+      break;
+    case 3:
+      d.prevpathname[d.prevpathnamelength]='\0';
+      pFileHandler = new FileHandlerMove(std::string(d.pathname), d.type,std::string(d.prevpathname) ,d.size);
+      break;
+  }
+  
+  return pFileHandler;
 }
 
-void Stream::send_file(std::string path, path_name file)
+void Stream::send_file(std::string path, FileHandler* file, Inotify* inotify)
 {
-  int type=0, filesize=0;
-  std::string fullpath = path + "/" + file.path + file.name; 
-  
+  /*
   if(file.path=="GOOD"&&file.name=="BYE")
   {
     send_data(file.path, file.name, filesize, type);
     return;
-  }
+  }*/
   
-  struct stat s;
-  if( stat(fullpath.c_str(),&s) == 0 )
+  setFolder(path);
+
+  if (inotify!=NULL)
   {
-    if( s.st_mode & S_IFDIR )
-    {  
-      type = 1;
-      filesize = 0;
-    }
-    else
-    {
-      type = 0;
-      filesize = get_file_size(fullpath);
-    }
-  }
-  else
-  {
-    type = 0;
-    filesize = -1;
+    file->setInotify(inotify);
   }
   
-  send_data(file.path, file.name, filesize, type);	//wyslij nazwe pliku,rozmiar itd..
   
+  
+  send_data(path,file);	//wyslij nazwe pliku,rozmiar itd..
   
   recv_syn();
   
-  if(filesize > 0 && type == 0)
-  {
-  //fullpath = "/home/mati/test/a.txt";
-  //std::cout << fullpath << std::endl;
-  FILE *pFile = fopen(fullpath.c_str(), "rb");	//otworz plik, czytaj z niego, i wysylaj
+  file->sendChunks(this);
   
-  int nread;
-  char buff[256] = {0};
-  int size_to_send = filesize;
-  while(size_to_send > 0){
-    
-    
-    nread = fread(buff,1,256,pFile); 
-    int bytes_sent = send_message(buff,nread);
-    size_to_send -= bytes_sent;
-   
-    //std::cout << "Bytes sent: " << bytes_sent << std::endl;
-    recv_syn();
-    
-    
-    //if (bytes_sent < 256)
-    // break;
-    
-  }
-  fclose (pFile);  
-  }
-  std::cout << "Wyslalem plik: " << file.path  << file.name << "  o rozm.: " << filesize << std::endl;
+  
+  std::cout << "Wyslalem plik: " << file->getRelPath() << "/"  << file->getName() << std::endl;
  
 
 }
 
-path_name Stream::recv_file(std::string path)
+FileHandler* Stream::recv_file(std::string path, Inotify* inotify)
 {
   last_delete=false;
   
-  recv_data();	//odbierz nazwe,rozmiar itd...
-  d.name[d.namelength]='\0';
+  FileHandler* file = recv_data();	//odbierz nazwe,rozmiar itd...
+  if (inotify!=NULL)
+  {
+    std::cout << "RECV FILE PODLACZAM INOTIFY" << std::endl;
+    file->setInotify(inotify);
+  }
+  /*d.pathname[d.pathnamelength]='\0';
   d.path[d.pathlength]='\0';
   std::string relpath = d.path;
   std::string name = d.name;
@@ -136,80 +130,20 @@ path_name Stream::recv_file(std::string path)
     return recvdfile;
   }
   std::string fullpath = path + "/" + relpath + name;
-  
-  //std::string fullpath = "/home/mati/sv/a.txt";
-  //std::cout << fullpath << std::endl;
-  
-  if (inotify!=NULL)
-    inotify->addIgnore(name);
-  
+  */
   
   send_syn();
   
+  setFolder(path);
+  
+  file->processFile(this);
+  
+
+  std::cout << "Odebralem plik: " << file->getName() << "  o rozm.: " << file->getActualFileSize(path)<< std::endl;
   
   
-  
-  if(d.size == -1)
-  {
-    
-    remove(fullpath.c_str());
-  
-    
-    last_delete=true;
-  }
-  else if(d.type == 1)
-  {
-   
-   
-    mkdir(fullpath.c_str(),0777);
-    
-    
-    if (inotify!=NULL)
-    {
-      inotify->add_watch(relpath,name);    
-    }
-    
-  }
-  else
-  {
-    //Jeśli Inotify był podany w konstruktorze, to dodajemy plik który ma ignorować
  
-    
-    
-    FILE *pFile = fopen(fullpath.c_str(), "wb");	//otworz plik o podanej nazwie i zapisuj do niego
-  
-    if(d.size > 0)
-    {
-     
-      char recvbuf[256] = {0};
-      int bytesReceived=0;
-      int filesize = d.size;
-  
-      while(filesize > 0)
-      {
-	//std::cout << "bytesReceived: " << bytesReceived << std::endl;
-	
-	//std::cout << "sizeof: " << strlen(recvbuf) << std::endl;
-	bytesReceived = recv_message(recvbuf,256); 
-	int bytes_sent = fwrite(recvbuf, 1,bytesReceived,pFile);
-	filesize -= bytes_sent;
-	
-	//if(bytesReceived < 256)
-	 // break;
-	send_syn();
-      }
-    }
-    
-    fclose (pFile);
-    
-  }
-  
-  std::cout << "Odebralem plik: " << name << "  o rozm.: " << d.size << std::endl;
-  
-  //if (inotify!=NULL)
-  //  inotify->removeIgnore(name);
-  
-  return recvdfile;
+  return file;
 }
 
 int Stream::get_file_size(std::string filename)
@@ -236,7 +170,19 @@ void Stream::recv_syn()
   recv_message(buf,4);
 }
 
+
 bool Stream::get_last_delete()
 {
   return last_delete;
 }
+
+std::string Stream::getFolder()
+{
+  return folder;
+}
+
+void Stream::setFolder(std::string path)
+{
+  folder = path;
+}
+

@@ -1,108 +1,61 @@
 #include "filehandler.h"
 
-void FileHandler::setPath(std::string path)
+
+FileHandler::FileHandler(std::string path, int type, int size)
 {
-  this->path=path;
+  relPathName = path;
+  typeOfAction = type;
+  sizeOfOriginalFile = size;
+  inotify = NULL;
 }
 
-std::string FileHandler::getPath()
+FileHandler::~FileHandler()
 {
-  return path;
 }
 
-void FileHandler::ropen()
+int FileHandler::getActualFileSize(std::string path)
 {
-  fp = fopen(path.c_str(),"rb");
+    std::string fullpath = path + "/" + relPathName;
+    struct stat stat_buf;
+    int rc = stat(fullpath.c_str(), &stat_buf);
+    return rc == 0 ? stat_buf.st_size : -1;
 }
 
-void FileHandler::aopen()
+void FileHandler::setSizeOfOriginalFile(int size)
 {
-  fp = fopen(path.c_str(),"ab");
+  sizeOfOriginalFile = size;
 }
 
-void FileHandler::close()
+
+std::string FileHandler::getRelPathName()
 {
-  fclose(fp);
+  return relPathName;
 }
 
-std::vector<unsigned char *> FileHandler::getChunks()
+
+std::string FileHandler::getName()
 {
-  std::vector< unsigned char *> chunks;
-  ropen();
-  while(1)
-  {
-    unsigned char *buff= new unsigned char[256];
-    int nread = fread(buff,1,256,fp);
-    printf("Bytes read %d \n", nread);
-    if(nread > 0)
-    {
-      chunks.push_back(buff);
-    }
-    if (nread < 256)
-    {
-	if (feof(fp))
-	  printf("End of file\n");
-	if (ferror(fp))
-	  printf("Error reading\n");
-	break;
-    }
-  }
-  close();
-  return chunks;
+  std::size_t found = relPathName.find_last_of("/\\");
+  return relPathName.substr(found+1); 
 }
 
-void FileHandler::writeChunks(std::vector<unsigned char *> chunks)
+std::string FileHandler::getRelPath()
 {
-  aopen();
-  for (int i =0;i<chunks.size();i++)
-  {
-    fwrite(chunks[i], 1,256,fp);
-  }
-  close();
-}
-
-std::string FileHandler::addzero(int x)
-{
-  std::ostringstream ss;
-  ss << x;
-  
-  if(x < 10)
-  {
-      std::string temp = "0";
-      
-      
-      temp += ss.str();
-      //std::cout << "addzero: "  << temp << std::endl;
-      return temp;
-  }
+  std::size_t found = relPathName.find_last_of("/\\");
+  std::size_t x = -1;
+  if(found == x)
+    return "";
   else
-    return ss.str();
-  
+    return relPathName.substr(0,found); 
 }
 
-std::string FileHandler::returndate()
+int FileHandler::getType()
 {
-  struct tm* clock;               
-  struct stat attrib;         
-  stat(path.c_str(), &attrib);
-  clock = gmtime(&(attrib.st_mtime));
-  std::string tempdate;
-  
-  
-  tempdate = addzero(clock->tm_year);
-  //std::cout << "year: " << tempdate << std::endl;
-  tempdate += addzero(clock->tm_mon);
-  //std::cout << "monthr: " << tempdate << std::endl;
-  tempdate += addzero(clock->tm_mday);
-  //std::cout << "day: " << tempdate << std::endl;
-  tempdate += addzero(clock->tm_hour);
-  //std::cout << "hour: " << tempdate << std::endl;
-  tempdate += addzero(clock->tm_min);
-  //std::cout << "min: " << tempdate << std::endl;
-  tempdate += addzero(clock->tm_sec);
-  //std::cout << "sec: " << tempdate << std::endl;
-  
- 
-  
-  return tempdate;
+  return typeOfAction;
+}
+
+
+void FileHandler::setInotify(Inotify* i)
+{
+  inotify = i;
 }

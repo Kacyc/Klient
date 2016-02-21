@@ -1,6 +1,7 @@
 #ifndef STREAM_H
 #define STREAM_H
 
+class Inotify;
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -11,16 +12,21 @@
 #include <vector>
 #include <string.h>
 #include <sys/stat.h>
-#include "inotify.h"
+
+
+#include "filehandlernormal.h"
+#include "filehandlerremove.h"
+#include "filehandlerfolder.h"
+#include "filehandlermove.h"
 
 struct data
 {
-  char name[20];
-  int namelength;
-  char path[20];
-  int pathlength;
+  char pathname[30];
+  int pathnamelength;
   int size;
-  int type; //0-file, 1-direcotry
+  int type; 
+  char prevpathname[30];
+  int prevpathnamelength;
 };
 
 
@@ -31,20 +37,23 @@ private:
     struct data d;
     Inotify* inotify;
     bool last_delete;
+    std::string folder;
 public:
     Stream(int filedesc);
     Stream(int filedesc,Inotify *inotify);
     int send_message(char* buffer, int len);
     int recv_message(char* buffer, int len);
-    int send_data(std::string path, std::string filename,int filesize, int type);
+    int send_data(std::string path, FileHandler* file);
     void send_syn();
     void recv_syn();
-    int recv_data();
-    void send_file(std::string path, path_name file);
-    path_name recv_file(std::string path);
+    FileHandler* recv_data();
+    void send_file(std::string path, FileHandler* file, Inotify* inotify = NULL);
+    FileHandler* recv_file(std::string path,Inotify* inotify = NULL);
     int get_file_size(std::string filename);
     std::string append_part(int size);
     int get_fd();
+    void setFolder(std::string path);
+    std::string getFolder();
     bool get_last_delete();
 };
 
