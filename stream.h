@@ -5,7 +5,6 @@ class Inotify;
 
 #include <sys/socket.h>
 #include <netinet/in.h>
-//#include <arpa/inet.h>
 #include <unistd.h>
 #include <iostream>
 #include <stdio.h>
@@ -30,32 +29,31 @@ struct data
 };
 
 
+
 class Stream
 {
 private:
     int fd;
-    struct data d;
-    Inotify* inotify;
-    bool last_delete;
+    struct data d;	//struktura do przesylania przez gniazdo
     std::string folder;
 public:
-    Stream(int filedesc);
-    Stream(int filedesc,Inotify *inotify);
-    int send_message(char* buffer, int len);
+    Stream(int filedesc, std::string path="");
+    int send_message(char* buffer, int len);	//wysylanie przez gniazdo bufora - buffer
     int recv_message(char* buffer, int len);
-    int send_data(std::string path, FileHandler* file);
-    void send_syn();
-    void recv_syn();
+    int send_data(FileHandler* file);	//wysylanie inoframcji o nazwie pliku, rozmiarze itd.
     FileHandler* recv_data();
-    void send_file(std::string path, FileHandler* file, Inotify* inotify = NULL);
-    FileHandler* recv_file(std::string path,Inotify* inotify = NULL);
+    void send_syn();	//wysylanie wiadomosci synchronizujacej
+    void recv_syn();
+    void send_file(FileHandler* file, Inotify* inotify = NULL);	//wysylanie pliku
+    FileHandler* recv_file(Inotify* inotify = NULL);
     int get_file_size(std::string filename);
-    std::string append_part(int size);
     int get_fd();
     void setFolder(std::string path);
+    bool isFolder(std::string relpathname);
     std::string getFolder();
-    bool get_last_delete();
+    
+    void sendInitFiles();	//poczatkowe wysylanie plikow posiadanych przez serwer do nowopodlaczonego klienta
+    std::vector<std::string> listOfFiles(std::string path);	//zwraca nazwy plikow w folderze serwera
+
 };
-
-
 #endif

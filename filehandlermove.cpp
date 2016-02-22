@@ -32,7 +32,7 @@ void FileHandlerMove::processFile(Stream* stream)
   
   if(inotify != NULL )
   {
-    if(inotify->isFolder(relPathName))
+    if(inotify->isFolder(fullpath))
     {
       
       inotify->remove_watch(prevRelPathName);    

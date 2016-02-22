@@ -23,11 +23,6 @@ int main(int argc, char **argv) {
 
 
 
-    //przechowujemy listę plików
-    std::vector<FileHandler *> filesList;
-
-
-
     Acceptor acceptor(addr, port);
     acceptor.start();	//bind,listen itd...
 
@@ -45,22 +40,17 @@ int main(int argc, char **argv) {
 
 
 
-
-
-
-    while(nfds)
+    while(1)
     {
-        int rv = poll(fds, nfds, -1/*3*60*1000000*/);
-        if(rv == -1) {
+        int rv = poll(fds, nfds, -1);
+        if(rv == -1)
             perror("poll error");
-        }
         else if (rv == 0)
-        {
             std::cout << "Timeout poll"  << std::endl;
-        }
+        
 
-        int curr_nfds = nfds;
-        for(int i = 0 ; i < curr_nfds ; i++)
+        
+        for(int i = 0 ; i < nfds ; i++)
         {
             if(fds[i].revents == 0)
             {
@@ -71,82 +61,57 @@ int main(int argc, char **argv) {
             {
                 //klient chce sie polaczyc i dodajemy jego deskryptor do tablicy deskryptorow
                 int new_fd = acceptor.accp();
-                int empty =-1;
-                for (int i = 0; i<nfds; i++)
+                int emptyindex =-1;
+                for (int j = 0; j<nfds; j++)
                 {
-                    if (fds[i].fd==-1)
+                    if (fds[j].fd==-1)
                     {
-                        empty = i;
+                        emptyindex = j;
+			break;
                     }
                 }
-                if (empty == -1)
+                if (emptyindex == -1)
                 {
                     fds[nfds].fd = new_fd;
                     fds[nfds].events = POLLIN;
                     nfds++;
                 } else
                 {
-                    fds[i].fd=new_fd;
+                    fds[emptyindex].fd=new_fd;
                 }
                 fds[i].revents=0;
-                std::cout << "nazwiazano polaczenie " << nfds-1 << "->" << nfds  << std::endl;
+                std::cout << "Nazwiazano polaczenie " << nfds-1 << "->" << nfds  << std::endl;
 
-                //TODO i teraz wrzucamy wszystkie pliki z listy do tego klienta
-
-                new_stream = new Stream(new_fd);
-                  for(std::vector<FileHandler *>::iterator it = filesList.begin(); it != filesList.end(); ++it)
-                  {
-                    std::cout << "Zaraz wysylam " << (*it)->getName() << "  do deskrpytora j: " << new_fd << std::endl;
-                    new_stream->send_file(dir,*it);
-                  }
+                
+		//wysylamy nowo podlaczonemu klientowi pliki serwera
+                new_stream = new Stream(new_fd,dir);
+		new_stream->sendInitFiles();
                 delete new_stream;
             }
             else
             {
                 //nastapilo zdarzenie od klienta
-                stream = new Stream(fds[i].fd);
+                stream = new Stream(fds[i].fd, dir);
 
 
                 //odbieramy plik od klienta
-                FileHandler* file_to_send = stream->recv_file(dir);
+                FileHandler* file_to_send = stream->recv_file();
                 if(file_to_send->getType()==4)
                 {
                   std::cout<<"Rozlaczenie klienta"<<std::endl;
                   fds[i].fd=-1;
                 } else
                 {
-                //jeśli było to usunięcie pliku usuwamy go z listy
-		  if (file_to_send->getType()==2)
-		  {
-		    std::vector<FileHandler *>::iterator it;
-		    for(it = filesList.begin(); it != filesList.end(); ++it)
-		      if ((*it)->getRelPathName()==file_to_send->getRelPathName()&&(*it)->getType()==file_to_send->getType())
-		      {
-			filesList.erase(it);
-			break;
-		      }
-		  }
-		  else
-		  {
-		    //Jeśli plik nie znajduje się na liście, dodajemy go
-		    std::vector<FileHandler *>::iterator it;
-		    for(it = filesList.begin(); it != filesList.end(); ++it)
-		    {
-		      if ((*it)->getRelPathName()==file_to_send->getRelPathName()&&(*it)->getType()==file_to_send->getType())
-		      break;
-		    }
-		    if (it == filesList.end())
-		      filesList.push_back(file_to_send);
-		  }
-		  
-		  for(int j=0 ; j < curr_nfds ; j++)
+                
+		  //odebrany plik wysylam pozostalym klientom
+		  for(int j=0 ; j < nfds ; j++)
 		  {
 
 		    if( (fds[j].fd != stream->get_fd()) && (fds[j].fd != acceptor.get_fd()) && (fds[j].fd !=-1 ) )
                     {
-                        std::cout << "Zaraz wysylam " << file_to_send->getName() << " do deskryptora j: " << j << std::endl;
-                        new_stream = new Stream(fds[j].fd);
-                        new_stream->send_file(dir,file_to_send);
+                        std::cout << "Wysylanie: " << file_to_send->getName() << " do deskryptora j: " << j << std::endl;
+                        new_stream = new Stream(fds[j].fd,dir);
+                        new_stream->send_file(file_to_send);
 
                         delete new_stream;
                     }
@@ -154,7 +119,7 @@ int main(int argc, char **argv) {
 		  }
 		}
 
-                //delete file_to_send;
+                delete file_to_send;
                 delete stream;
             }
 

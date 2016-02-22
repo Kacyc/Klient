@@ -1,7 +1,5 @@
 #include "connector.h"
-//#include <iostream>
 
-#include <arpa/inet.h>
 
 
 int Connector::conn(std::string addr, int port)

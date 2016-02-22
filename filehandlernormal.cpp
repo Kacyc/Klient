@@ -28,7 +28,7 @@ void FileHandlerNormal::sendChunks(Stream* stream)
     int bytes_sent = stream->send_message(buff,nread);
     size_to_send -= bytes_sent;
    
-    //std::cout << "Bytes sent: " << bytes_sent << std::endl;
+    
     stream->recv_syn();
     
   }
@@ -56,19 +56,16 @@ void FileHandlerNormal::processFile(Stream* stream)
   
       while(filesize > 0)
       {
-	//std::cout << "bytesReceived: " << bytesReceived << std::endl;
 	
-	//std::cout << "sizeof: " << strlen(recvbuf) << std::endl;
 	bytesReceived = stream->recv_message(recvbuf,256); 
 	int bytes_sent = fwrite(recvbuf, 1,bytesReceived,pFile);
 	filesize -= bytes_sent;
 	
-	//if(bytesReceived < 256)
-	 // break;
+	
 	stream->send_syn();
       }
     }
     
-    fclose (pFile);
+    fclose(pFile);
 }
 

@@ -16,7 +16,7 @@ void terminationProtocol(int signal)
 {
   Stream stream(FD);
   FileHandler* fh = new FileHandlerNormal("path",4,0);
-  stream.send_file("", fh);
+  stream.send_file( fh);
   exit(0);
 }
 
@@ -32,37 +32,28 @@ int main(int argc, char **argv) {
     const char* addr = "127.0.0.1";
     int port = 1330;
 
+    
     Inotify inotify(dir);
-
 
     Connector connector;
     int fd = connector.conn(addr, port);
+    
     FD=fd;
-    int nfds = 3;
+    int nfds = 2;
     struct pollfd fds[nfds];
     fds[0].fd = fd;
     fds[0].events = POLLIN;
 
-    fds[1].fd = 0;
+    fds[1].fd = inotify.get_fd();
     fds[1].events = POLLIN;
 
-    fds[2].fd = inotify.get_fd();
-    fds[2].events = POLLIN;
-
-
-
-
-    Stream stream(fd, &inotify);
-
-    //int br = stream.recv_data(buffer, bufsize);
-
-
-    //char buffsend[] = {"Czesc "};
+    Stream stream(fd, dir);
+    
     signal(SIGINT,terminationProtocol);
 
     while(1)
     {
-        int rv = poll(fds, nfds, -1/*3*60*1000*/);
+        int rv = poll(fds, nfds, -1);
         if(rv == -1) {
             perror("poll error");
         }
@@ -75,41 +66,19 @@ int main(int argc, char **argv) {
 
         if (fds[0].revents == 1)
         {
-
-            //inotify.remove_watch();
-            FileHandler* fh = stream.recv_file(dir,&inotify);	//nastopilo zdarzenie od serwera i klient odbiera plik
+	    //nastopilo zdarzenie od serwera i klient odbiera plik
+            FileHandler* fh = stream.recv_file(&inotify);	
             delete fh;
-            //inotify.add_watch();
-
-            /*if(br==0)
-            {
-              std::cout << "connection lost: " << nfds << "->" <<nfds-1   << std::endl;
-              nfds--;
-              break;
-            }
-            */
+            
         }
         else if(fds[1].revents == 1)
         {
-            //zdarzenie od standartowego wejscia, uzywane wczesniej do testu wysylania poszczegolnych plikow
-            int bufsize=256;
-            char buffer[bufsize];
-            int bytes_read = read(0,buffer,bufsize);
-            buffer[bytes_read-1] = '\0';
-            std::cout << "read len: " << strlen(buffer) << std::endl;
-            //stream.send_file("/home/mati/test",buffer);
-            //stream.send_message(buffer,bytes_read);
-        }
-        else if(fds[2].revents == 1)
-        {
             //zdarzenia od inotify, odbieramy nazwy plikow i wysylamy je do serwera
 
-            //std::cout << "inotify something happened" << std::endl;
             std::vector<FileHandler*> x = inotify.readNotify();
             for(std::vector<FileHandler*>::iterator it = x.begin(); it != x.end(); ++it)
             {
-                //std::cout << "Przechodze do wysylania: " << (*it).name << std::endl;
-                stream.send_file(dir, (*it), &inotify);
+                stream.send_file((*it), &inotify);
                 delete (*it);
             }
 

@@ -5,11 +5,7 @@ class Stream;
 class Inotify;
 
 #include<string>
-#include<stdlib.h>
-#include<stdio.h>
 #include<vector>
-#include <sstream>
-#include <time.h>
 #include <sys/stat.h>
 
 

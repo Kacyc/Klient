@@ -1,7 +1,4 @@
 #include "acceptor.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 Acceptor::Acceptor(std::string my_address, int my_port)
 {
@@ -17,7 +14,7 @@ void Acceptor::start()
       perror ("Can't create socket");
       exit (EXIT_FAILURE);
     }
-    //sock = new sockaddr_in{AF_INET,htons(port),INADDR_ANY};
+    
     sock = {AF_INET,htons(port),INADDR_ANY};
     
     int reuse = 1;

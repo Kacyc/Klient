@@ -20,4 +20,10 @@ void FileHandlerRemove::processFile(Stream* stream)
   }
   std::string fullpath = stream->getFolder()+"/" +relPathName;
   remove(fullpath.c_str());
+  
+  if(inotify != NULL )
+  {
+    if(inotify->isFolder(fullpath))
+      inotify->remove_watch(relPathName);    
+  }
 }

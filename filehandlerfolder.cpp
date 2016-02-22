@@ -21,7 +21,7 @@ void FileHandlerFolder::processFile(Stream* stream)
   mkdir(fullpath.c_str(),0777);
   if (inotify != NULL)
   {
-    if(inotify->isFolder(relPathName))
+    if(inotify->isFolder(fullpath))
       inotify->add_watch(relPathName);    
   }
   

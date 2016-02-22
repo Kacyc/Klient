@@ -1,9 +1,6 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-//#include <fcntl.h>
-//#include <unistd.h>
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

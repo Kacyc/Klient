@@ -4,9 +4,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <dirent.h>
-#include <time.h>
 #include <sys/stat.h>
-#include <sstream>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -30,7 +28,7 @@ struct fold_wd
   int wd;
 };
 
-//struktura przechowujaca sciezke wzgledna pliku i jego nazwe
+//struktura przechowujaca ciasteczko zdarzenia pliku i sciezke wzgledna pliku 
 struct cookie_name
 {
     int cookie;
@@ -43,38 +41,33 @@ private:
   std::string path;
   int fd;
   int wd;
-  bool isFolderToRename;
-  std::string prevFolderName;
-  std::vector<std::string> ignoreList;
-  std::vector<fold_wd> subdirs;
-  std::vector<cookie_name> cookies;
+  std::vector<std::string> ignoreList;	//pliki ignorowane
+  std::vector<fold_wd> subdirs;	//podfoldery
+  std::vector<cookie_name> cookies;	//ciasteczko sluzace do obslugi polecenia mv
 public:
   Inotify(const char* path);
   ~Inotify();
   
-  std::vector<FileHandler*> readNotify();
-  std::string addzero(int x);
-  std::string returndate(const char* path);
-  std::string get_path();
-  void add_watch(std::string relpathname);
-  void remove_watch(std::string relpathname);
+  std::vector<FileHandler*> readNotify();	//obsluguje zdarzenia od inotify
   int get_fd();
-  std::string get_rel_path(int event_wd,std::string event_name);	//zwraca sciezke wzgledna do pliku o nazwie event_name (bez nazwy)
-  bool has_suffix(const std::string &str, const std::string &suffix);
-  void addCookie(int cookie, std::string relPathName);
+  std::string get_path();
+  void add_watch(std::string relpathname);	//dodaje folder do obserwowanych przez inotify
+  void remove_watch(std::string relpathname);	
+  std::string get_rel_path(int event_wd,std::string event_name);	//zwraca sciezke wzgledna do pliku o nazwie event_name
+  void addCookie(int cookie, std::string relPathName);	//dodaje ciasteczko
   void deleteCookie(int cookie);
-  std::string getCookieName(int cookie);
-  void addIgnore(std::string);
-  void addSubdir(std::string rel_path, int wd);
-  int removeSubdir(std::string path);
+  std::string getCookieName(int cookie);	//zwraca poprzednia nazwe pliku ze sciezka wzgledna po ciasteczku
+  void addIgnore(std::string);	//dodaje plik do ignorowanych
   void removeIgnore(std::string);
   bool shouldIgnore(std::string);
+  void addSubdir(std::string rel_path, int wd);	//dodaje podfolder do listy podfolderow dzieki czemu w razie zdarzenia wiemy w ktorym podfolderze nastapilo
+  int removeSubdir(std::string path);
   bool fileExists(std::string fullpath);
   bool isFolder(std::string fullpath);
-  std::vector<std::string> listrecursive(std::string path);
-  std::vector<FileHandler*> listdir(std::string folder);
+  std::vector<std::string> listrecursive(std::string path);	//wywolywana w listdir - przechodzi po folderze
+  std::vector<FileHandler*> listdir(std::string folder);	//zwraca liste plikow w folderze (uzywane gdy wystepuje kopiowanie folderu z plikami w srodku, aby miec pewnosc ze nawet pliki ktorych inotify nie wylapie zostana skopiowane)
   std::string findfullpath(std::string path, std::string relpathname, bool& found);
-  std::string findrelpath(std::string relpathname);
+  std::string findrelpath(std::string relpathname);	//zwraca poprawna sciezke wzgledna do pliku, uzywana gdy 
 };
 
 

@@ -3,9 +3,8 @@
 
 
 #include "filehandler.h"
-#include "stream.h"
 #include "inotify.h"
-
+#include "stream.h"
 
 class FileHandlerNormal : public FileHandler{
 public:

@@ -1,17 +1,12 @@
 #include "stream.h"
-#include "inotify.h"
 
-Stream::Stream(int filedesc)
+
+Stream::Stream(int filedesc, std::string path)
 {
-    this->fd = filedesc;
-    this->inotify = NULL;
+    fd = filedesc;
+    folder = path;
 }
 
-Stream::Stream(int filedesc,Inotify *inotify)
-{
-    this->fd = filedesc;
-    this->inotify = inotify;
-}
 
 int Stream::send_message(char* buffer, int len)
 {
@@ -27,16 +22,15 @@ int Stream::recv_message(char* buffer, int len)
     return bytes_recv;
 }
 
-int Stream::send_data(std::string path, FileHandler* file)
+int Stream::send_data(FileHandler* file)
 {
     d.pathnamelength = (file->getRelPathName()).length();
     strncpy(d.pathname, (file->getRelPathName()).c_str(), d.pathnamelength);
 
 
-    d.size = file->getActualFileSize(path);
+    d.size = file->getActualFileSize(folder);
     d.type = file->getType();
 
-    std::cout << "WDATA: " << std::string(d.pathname) << "  o typie: " << d.type << std::endl;
 
     if(d.type == 3)
     {
@@ -58,7 +52,6 @@ FileHandler* Stream::recv_data()
 
     FileHandler* pFileHandler;
 
-    std::cout << "ODATA: " << d.pathname << "  o typie: " << d.type << std::endl;
 
     switch(d.type)
     {
@@ -83,73 +76,45 @@ FileHandler* Stream::recv_data()
     return pFileHandler;
 }
 
-void Stream::send_file(std::string path, FileHandler* file, Inotify* inotify)
+void Stream::send_file( FileHandler* file, Inotify* inotify)
 {
-    /*
-    if(file.path=="GOOD"&&file.name=="BYE")
-    {
-      send_data(file.path, file.name, filesize, type);
-      return;
-    }*/
-
-    setFolder(path);
 
     if (inotify!=NULL)
     {
         file->setInotify(inotify);
     }
 
-
-
-    send_data(path,file);	//wyslij nazwe pliku,rozmiar itd..
-    if (file->getType()==4)
+    send_data(file);	//wyslij nazwe pliku,rozmiar itd..
+    if (file->getType()==4)	//odlaczanie klienta
       return;
+    
+    
     recv_syn();
 
-    file->sendChunks(this);
-
-
-    std::cout << "Wyslalem plik: " << file->getRelPath() << "/"  << file->getName() << std::endl;
+    file->sendChunks(this);	//wyslij zawartosc pliku
+    std::cout << "Wyslalem plik: " << file->getRelPathName() << std::endl;
 
 
 }
 
-FileHandler* Stream::recv_file(std::string path, Inotify* inotify)
+FileHandler* Stream::recv_file( Inotify* inotify)
 {
-    last_delete=false;
-
+    
     FileHandler* file = recv_data();	//odbierz nazwe,rozmiar itd...
-    if (file->getType()==4)
+    if (file->getType()==4)	//odlaczanie klienta
     {
       return file;
     }
     if (inotify!=NULL)
     {
-        std::cout << "RECV FILE PODLACZAM INOTIFY" << std::endl;
+        
         file->setInotify(inotify);
     }
-    /*d.pathname[d.pathnamelength]='\0';
-    d.path[d.pathlength]='\0';
-    std::string relpath = d.path;
-    std::string name = d.name;
-    struct path_name recvdfile = {relpath, name};
-    if(relpath=="GOOD"&&name=="BYE")
-    {
-      return recvdfile;
-    }
-    std::string fullpath = path + "/" + relpath + name;
-    */
+    
 
     send_syn();
-
-    setFolder(path);
-
-    file->processFile(this);
-
-
-    std::cout << "Odebralem plik: " << file->getName() << "  o rozm.: " << file->getActualFileSize(path)<< std::endl;
-
-
+    file->processFile(this);	//zrealizuj wlasciwe polecenie dla pliku oraz odbierz zawartosc jesli jest
+    std::cout << "Odebralem plik: " << file->getRelPathName() << "  o rozm.: " << file->getActualFileSize(folder)<< std::endl;
 
     return file;
 }
@@ -178,12 +143,6 @@ void Stream::recv_syn()
     recv_message(buf,4);
 }
 
-
-bool Stream::get_last_delete()
-{
-    return last_delete;
-}
-
 std::string Stream::getFolder()
 {
     return folder;
@@ -194,3 +153,69 @@ void Stream::setFolder(std::string path)
     folder = path;
 }
 
+void Stream::sendInitFiles()
+{
+  
+  std::vector<std::string> list = listOfFiles(folder);
+  FileHandler* pFileHandler;
+  
+
+  for ( auto i = list.begin(); i != list.end(); i++ ) {
+	if(isFolder(*i))
+	 pFileHandler = new FileHandlerFolder((*i),1);
+	else
+	 pFileHandler = new FileHandlerNormal((*i),0);
+	
+	send_file(pFileHandler);
+	
+	delete pFileHandler;
+  }
+  
+     
+}
+
+
+bool Stream::isFolder(std::string relpathname){
+    std::string fullpath = folder + "/" + relpathname;
+    struct stat s;
+    stat(fullpath.c_str(),&s);
+    if( s.st_mode & S_IFDIR )
+    {  
+      return true;
+    }
+    else
+      return false;
+}
+
+std::vector<std::string> Stream::listOfFiles(std::string path) {
+  std::vector<std::string> fileList;
+  struct dirent *entry;
+  DIR *dp;
+
+  dp = opendir(path.c_str());
+  if (dp == NULL) {
+    perror("opendir");
+  }
+  
+  
+  while((entry = readdir(dp)))
+  {
+    if(entry->d_name[0] == '.')
+      continue;
+    
+    
+    fileList.push_back(std::string(entry->d_name));
+    
+    if(entry->d_type == DT_DIR)
+    {
+      path += "/"+std::string(entry->d_name);
+      std::vector<std::string> tempList = listOfFiles(path);
+      for ( auto i = tempList.begin(); i != tempList.end(); i++ ) {
+	(*i).insert(0, std::string(entry->d_name)+"/");
+      }
+      fileList.insert(fileList.end(), tempList.begin(), tempList.end() );
+    }
+  }
+  closedir(dp);
+  return fileList;
+}

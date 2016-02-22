@@ -4,7 +4,6 @@
 
 
 #include "filehandler.h"
-
 #include "inotify.h"
 
 class FileHandlerFolder : public FileHandler{
