@@ -24,14 +24,21 @@ void terminationProtocol(int signal)
 
 int main(int argc, char **argv) {
 
-    const char* dir = "/home/mati/cl";
-    if(argv[1] != NULL)
-        dir = argv[1];
-    //const char* addr =  argv[2];
-    //int port = atoi( argv[3]);
-    const char* addr = "127.0.0.1";
-    int port = 1330;
+    if(argc < 4){
+      std::cout << "Podaj wszystkie argumenty: 1-IP 2-port 3-folder" << std::endl;
+      return 1;
+    }
+        
+    const char* addr = argv[1];
+    int port = atoi( argv[2]);
+    if(port < 1024 || port > 65536){
+      std::cout << "Niewlasciwy port" << std::endl;
+      return 1;
+    }
+    const char* dir = argv[3];
+    
 
+    
     
     Inotify inotify(dir);
 

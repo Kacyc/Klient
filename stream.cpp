@@ -179,7 +179,7 @@ bool Stream::isFolder(std::string relpathname){
     std::string fullpath = folder + "/" + relpathname;
     struct stat s;
     stat(fullpath.c_str(),&s);
-    if( s.st_mode & S_IFDIR )
+    if( (s.st_mode & S_IFMT) == S_IFDIR)
     {  
       return true;
     }
